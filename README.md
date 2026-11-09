@@ -189,7 +189,9 @@ Run `sudo Packaging/uninstall.sh` (or push it as a Jamf policy script). It stops
 
 ## Acknowledgements
 
-Threshold's full-screen blur and progress window are drawn by [swiftDialog](https://github.com/swiftDialog/swiftDialog), created by Bart Reardon and maintained by the swiftDialog project (MIT License, © CSIRO). Threshold doesn't include swiftDialog; install it separately. Thank you to everyone who works on it.
+Threshold wouldn't be possible without [swiftDialog](https://github.com/swiftDialog/swiftDialog) by **Bart Reardon**. The blurred full-screen window, the live progress list and the "still updating" message are all swiftDialog. Huge thanks to Bart and everyone who contributes to swiftDialog for building and maintaining such a great tool for the Mac admin community. 🙏
+
+swiftDialog is MIT-licensed and installed separately; Threshold doesn't include it.
 
 ## License
 
