@@ -201,11 +201,47 @@ public final class SwiftDialogPresenter: DialogPresenting {
     }
 }
 
-/// Runs `<dialog> --version` (10 s timeout) and parses the leading version, e.g. "2.5.2.4777".
-public func swiftDialogVersion(path: String, launcher: ProcessLauncher, clock: Clock) -> Version? {
-    let result = runToCompletion(launcher, clock, path, ["--version"], timeout: 10)
-    guard result.succeeded else { return nil }
-    let firstLine = result.output.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
-    let token = firstLine.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? ""
-    return Version(token)
+/// Why `<dialog> --version` gave no usable version.
+public enum SwiftDialogVersionProblem: Error, Equatable, CustomStringConvertible {
+    case timedOut(seconds: Int)
+    case launchFailed(String)
+    case exited(code: Int32, output: String)
+    case unreadable(output: String)
+
+    public var description: String {
+        switch self {
+        case .timedOut(let seconds): return "timed out after \(seconds)s"
+        case .launchFailed(let detail): return detail
+        case .exited(let code, let output): return "exited \(code)" + (output.isEmpty ? "" : ": \(output)")
+        case .unreadable(let output): return "unreadable output: \(output.isEmpty ? "(none)" : output)"
+        }
+    }
+}
+
+/// Runs `<dialog> --version` and parses the leading version, e.g. "2.5.2.4777".
+/// Right after login a Mac can be too busy for swiftDialog to answer quickly (seen: > 10 s with
+/// swiftDialog 3.0.1), so each attempt gets `timeout` seconds and a failed attempt is retried once.
+public func swiftDialogVersion(path: String, launcher: ProcessLauncher, clock: Clock,
+                               timeout: TimeInterval = 60, attempts: Int = 2)
+    -> Result<Version, SwiftDialogVersionProblem> {
+    var problem = SwiftDialogVersionProblem.unreadable(output: "")
+    for attempt in 1...max(1, attempts) {
+        if attempt > 1 { clock.sleep(2) }
+        let result = runToCompletion(launcher, clock, path, ["--version"], timeout: timeout)
+        let output = String(result.output.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))
+        if result.timedOut {
+            problem = .timedOut(seconds: Int(timeout))
+        } else if let code = result.exitCode, code != 0 {
+            problem = .exited(code: code, output: output)
+        } else if result.exitCode == nil {
+            problem = .launchFailed(output)
+        } else {
+            let firstLine = result.output.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+            let token = firstLine.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? ""
+            if let version = Version(token) { return .success(version) }
+            // A clean exit with output we can't parse won't change on retry.
+            return .failure(.unreadable(output: output))
+        }
+    }
+    return .failure(problem)
 }

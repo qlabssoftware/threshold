@@ -70,6 +70,7 @@ private final class World: Platform {
     var resolvedExecutables: [String: String] = [:]
     private(set) var presenterGlobals: [GlobalConfig] = []
     var dialogVersion = "2.5.2.4777"
+    var dialogVersionRunsFor: TimeInterval = 0
     var installed: [String: InstalledVersion] = [:]
     var afterInstall: [String: InstalledVersion] = [:]
     var installRunsFor: [String: TimeInterval] = [:]
@@ -108,7 +109,7 @@ private final class World: Platform {
             return FakeProcess(clock: fakeClock, runsFor: 1, exitCode: code)
         }
         if args == ["--version"] {
-            return FakeProcess(clock: fakeClock, runsFor: 0, output: dialogVersion + "\n")
+            return FakeProcess(clock: fakeClock, runsFor: dialogVersionRunsFor, output: dialogVersion + "\n")
         }
         return FakeProcess(clock: fakeClock, runsFor: 0)
     }
@@ -358,8 +359,8 @@ private struct WorldVersions: VersionReading {
     #expect(w.presenters.isEmpty)
     #expect(w.installs.isEmpty)
     #expect(w.report?.items.map(\.state) == [.skipped, .skipped])
-    #expect(w.report?.items.allSatisfy { $0.reason == "swiftDialog missing, too old or untrusted" } == true)
-    #expect(w.report?.overall == "BLOCKED: swiftDialog missing, too old or untrusted")
+    #expect(w.report?.items.allSatisfy { $0.reason == "swiftDialog missing or untrusted" } == true)
+    #expect(w.report?.overall == "BLOCKED: swiftDialog missing or untrusted")
     #expect(w.report?.items.allSatisfy { !$0.countsAsFailure } == true)
     #expect(w.state.failures.isEmpty)
     #expect(w.state.lastHandledBootSession == "boot-1")
@@ -371,8 +372,30 @@ private struct WorldVersions: VersionReading {
     w.dialogVersion = "2.4.9"
     #expect(w.run() == 0)
     #expect(w.presenters.isEmpty)
-    #expect(w.report?.items.first?.reason == "swiftDialog missing, too old or untrusted")
-    #expect(w.report?.overall == "BLOCKED: swiftDialog missing, too old or untrusted")
+    #expect(w.report?.items.first?.reason == "swiftDialog 2.4.9 older than 2.5.0")
+    #expect(w.report?.overall == "BLOCKED: swiftDialog 2.4.9 older than 2.5.0")
+}
+
+@Test func slowSwiftDialogAtLoginStillInstalls() {
+    // Field case: swiftDialog 3.0.1 took > 10 s to answer `--version` right after login.
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    w.dialogVersionRunsFor = 25
+    #expect(w.run() == 0)
+    #expect(w.report?.items.map(\.state) == [.done])
+    #expect(w.report?.overall == "OK")
+}
+
+@Test func hungSwiftDialogExplainsWhy() {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    w.dialogVersionRunsFor = 1_000
+    #expect(w.run() == 0)
+    #expect(w.presenters.isEmpty)
+    #expect(w.installs.isEmpty)
+    #expect(w.report?.items.first?.reason == "swiftDialog version check failed (timed out after 60s)")
+    #expect(w.report?.overall == "BLOCKED: swiftDialog version check failed (timed out after 60s)")
+    #expect(w.state.failures.isEmpty)
 }
 
 @Test func untrustedSwiftDialogIsNeverExecuted() {
@@ -384,8 +407,8 @@ private struct WorldVersions: VersionReading {
     #expect(w.installs.isEmpty)
     #expect(w.fakeLauncher.launches.isEmpty)   // not even `dialog --version`
     #expect(w.report?.items.map(\.state) == [.skipped])
-    #expect(w.report?.items.first?.reason == "swiftDialog missing, too old or untrusted")
-    #expect(w.report?.overall == "BLOCKED: swiftDialog missing, too old or untrusted")
+    #expect(w.report?.items.first?.reason == "swiftDialog missing or untrusted")
+    #expect(w.report?.overall == "BLOCKED: swiftDialog missing or untrusted")
     #expect(w.state.failures.isEmpty)
 }
 

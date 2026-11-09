@@ -184,12 +184,51 @@ struct PresenterTests {
     @Test func versionParsing() {
         let clock = FakeClock()
         let ok = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 0, output: "2.5.2.4777\n") }
-        #expect(swiftDialogVersion(path: "/d", launcher: ok, clock: clock) == Version("2.5.2.4777"))
-        #expect(ok.launches[0].arguments == ["--version"])
+        #expect(swiftDialogVersion(path: "/d", launcher: ok, clock: clock) == .success(Version("2.5.2.4777")!))
+        #expect(ok.launches.map(\.arguments) == [["--version"]])
         let bad = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 0, exitCode: 1, output: "2.5") }
-        #expect(swiftDialogVersion(path: "/d", launcher: bad, clock: clock) == nil)
+        #expect(swiftDialogVersion(path: "/d", launcher: bad, clock: clock) == .failure(.exited(code: 1, output: "2.5")))
+        #expect(bad.launches.count == 2)   // a failed run is retried once
         let junk = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 0, output: "hello\n") }
-        #expect(swiftDialogVersion(path: "/d", launcher: junk, clock: clock) == nil)
+        #expect(swiftDialogVersion(path: "/d", launcher: junk, clock: clock) == .failure(.unreadable(output: "hello")))
+        #expect(junk.launches.count == 1)  // a clean exit with junk output isn't retried
+    }
+
+    @Test func slowSwiftDialogAtLoginStillGetsAVersion() {
+        // Seen on a busy Mac right after login: `dialog --version` took > 10 s.
+        let clock = FakeClock()
+        let slow = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 25, output: "3.0.1.4955\n") }
+        #expect(swiftDialogVersion(path: "/d", launcher: slow, clock: clock) == .success(Version("3.0.1.4955")!))
+        #expect(slow.launches.count == 1)
+    }
+
+    @Test func hungFirstVersionCheckIsRetried() {
+        let clock = FakeClock()
+        var calls = 0
+        let flaky = FakeLauncher { _, _ in
+            calls += 1
+            return FakeProcess(clock: clock, runsFor: calls == 1 ? 1_000 : 0, output: "3.0.1.4955\n")
+        }
+        #expect(swiftDialogVersion(path: "/d", launcher: flaky, clock: clock) == .success(Version("3.0.1.4955")!))
+        #expect(flaky.launches.count == 2)
+    }
+
+    @Test func versionCheckGivesUpAfterTwoTimeouts() {
+        let clock = FakeClock()
+        let start = clock.now()
+        let hung = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 1_000) }
+        #expect(swiftDialogVersion(path: "/d", launcher: hung, clock: clock) == .failure(.timedOut(seconds: 60)))
+        #expect(hung.launches.count == 2)
+        #expect(clock.now().timeIntervalSince(start) < 130)
+    }
+
+    @Test func versionCheckLaunchFailure() {
+        let clock = FakeClock()
+        let launcher = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 0) }
+        launcher.failingExecutables = ["/d"]
+        guard case .failure(.launchFailed) = swiftDialogVersion(path: "/d", launcher: launcher, clock: clock) else {
+            Issue.record("expected launchFailed"); return
+        }
     }
 
     @Test func wrongOwnerThrowsAndLaunchesNothing() {

@@ -136,11 +136,13 @@ public final class Lifecycle {
         }
 
         // 9. No usable swiftDialog means no UI, so no installs.
-        guard let dialogPath = usableSwiftDialog(global) else {
-            log.error("swiftDialog missing, too old or untrusted at \(global.swiftDialogPath); skipping all work")
-            let reason = "swiftDialog missing, too old or untrusted"
-            write(plan: loginPlan, results: skippedResults(loginPlan.work, reason),
-                  user: user.name, boot: boot, blocked: reason)
+        let dialogPath: String
+        switch usableSwiftDialog(global) {
+        case .success(let path): dialogPath = path
+        case .failure(let unusable):
+            log.error("\(unusable.reason); skipping all work")
+            write(plan: loginPlan, results: skippedResults(loginPlan.work, unusable.reason),
+                  user: user.name, boot: boot, blocked: unusable.reason)
             return 0
         }
 
@@ -312,15 +314,26 @@ public final class Lifecycle {
         firstTrusted([global.jamfBinaryPath] + GlobalConfig.jamfFallbacks)
     }
 
-    /// The resolved swiftDialog path if it is trusted and new enough; it is never executed otherwise.
-    private func usableSwiftDialog(_ global: GlobalConfig) -> String? {
+    /// The resolved swiftDialog path if it is trusted and new enough (it is never executed otherwise),
+    /// or the reason it can't be used.
+    private func usableSwiftDialog(_ global: GlobalConfig) -> Result<String, SwiftDialogUnusable> {
         guard let path = firstTrusted([global.swiftDialogPath] + GlobalConfig.swiftDialogFallbacks) else {
             log.error("swiftDialog at \(global.swiftDialogPath) (and inside Dialog.app) is missing or untrusted")
-            return nil
+            return .failure(SwiftDialogUnusable(reason: "swiftDialog missing or untrusted"))
         }
-        guard let version = swiftDialogVersion(path: path, launcher: platform.launcher, clock: clock) else { return nil }
-        log.info("swiftDialog \(version.raw) at \(path)")
-        return version >= global.minSwiftDialogVersion ? path : nil
+        switch swiftDialogVersion(path: path, launcher: platform.launcher, clock: clock) {
+        case .failure(let problem):
+            log.error("swiftDialog at \(path): --version \(problem)")
+            return .failure(SwiftDialogUnusable(reason: "swiftDialog version check failed (\(problem))"))
+        case .success(let version):
+            log.info("swiftDialog \(version.raw) at \(path)")
+            guard version >= global.minSwiftDialogVersion else {
+                let reason = "swiftDialog \(version.raw) older than \(global.minSwiftDialogVersion.raw)"
+                log.error(reason)
+                return .failure(SwiftDialogUnusable(reason: reason))
+            }
+            return .success(path)
+        }
     }
 
     /// The reason nothing in `work` could be installed this run, if so.
@@ -376,3 +389,6 @@ public final class Lifecycle {
         }
     }
 }
+
+/// Why swiftDialog can't be used this run; `reason` goes into results.json.
+struct SwiftDialogUnusable: Error { let reason: String }
