@@ -187,6 +187,10 @@ Unmanaged VMs have no MDM, and macOS wipes `/Library/Managed Preferences` at boo
 
 Run `sudo Packaging/uninstall.sh` (or push it as a Jamf policy script). It stops the daemon, dismisses any Threshold dialog, removes the binary, LaunchDaemon plist, state, results, command files and logs, and forgets the package receipt. It is safe to run when nothing is installed. Remove the configuration profile and EA separately.
 
+## Acknowledgements
+
+Threshold's full-screen blur and progress window are drawn by [swiftDialog](https://github.com/swiftDialog/swiftDialog), created by Bart Reardon and maintained by the swiftDialog project (MIT License, © CSIRO). Threshold doesn't include swiftDialog; install it separately. Thank you to everyone who works on it.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Documentation: [wiki](https://github.com/qlabssoftware/threshold/wiki).
