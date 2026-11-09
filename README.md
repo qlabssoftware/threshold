@@ -1,6 +1,6 @@
 # Threshold
 
-> **Pre-1.0 software.** Config keys, file formats and behavior may still change. Test on a few Macs first.
+> **New software.** Pilot on a few Macs before rolling out to your whole fleet.
 
 Threshold updates apps right after login, before people start working. It is a root LaunchDaemon, configured entirely by an MDM configuration profile (preference domain `com.qlabs.threshold`).
 
