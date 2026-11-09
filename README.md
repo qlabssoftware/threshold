@@ -189,4 +189,4 @@ Run `sudo Packaging/uninstall.sh` (or push it as a Jamf policy script). It stops
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Documentation: [wiki](https://github.com/qlabssoftware/threshold/wiki).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Documentation: [wiki](https://github.com/qlabssoftware/threshold/wiki).
