@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadIdentifier</key>
+    <string>com.qlabs.threshold.profile</string>
+    <key>PayloadUUID</key>
+    <string>B8B67519-91D5-4E1E-A8A9-884A1536DCD3</string>
+    <key>PayloadDisplayName</key>
+    <string>Threshold (example)</string>
+    <key>PayloadDescription</key>
+    <string>EXAMPLE ONLY. PLACEHOLDERS to replace before use: the sha256 value (64 zeros), teamID, packagePath, targetVersion values, trigger names and healthProcess.</string>
+    <key>PayloadOrganization</key>
+    <string>Example Org</string>
+    <key>PayloadScope</key>
+    <string>System</string>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.qlabs.threshold</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.qlabs.threshold.profile.settings</string>
+            <key>PayloadUUID</key>
+            <string>0408DF3E-D895-42A0-93B3-61C1096D4261</string>
+            <key>PayloadDisplayName</key>
+            <string>Threshold settings</string>
+            <key>PayloadDescription</key>
+            <string>EXAMPLE ONLY. The sha256 below is a PLACEHOLDER (64 zeros); replace it with the real hash of your package.</string>
+            <key>enabled</key>
+            <true/>
+            <key>capSeconds</key>
+            <integer>300</integer>
+            <key>items</key>
+            <array>
+                <dict>
+                    <key>id</key>
+                    <string>cisco-secure-client</string>
+                    <key>displayName</key>
+                    <string>Cisco Secure Client</string>
+                    <key>appPath</key>
+                    <string>/Applications/Cisco/Cisco Secure Client.app</string>
+                    <key>targetVersion</key>
+                    <string>5.1.6.103</string>
+                    <key>source</key>
+                    <string>cachedPackage</string>
+                    <key>packagePath</key>
+                    <string>/Library/Application Support/JAMF/Waiting Room/cisco-secure-client.pkg</string>
+                    <key>sha256</key>
+                    <string>0000000000000000000000000000000000000000000000000000000000000000</string>
+                    <key>teamID</key>
+                    <string>DE8Y96K9QP</string>
+                    <key>fallbackTrigger</key>
+                    <string>threshold-cisco</string>
+                    <key>healthProcess</key>
+                    <string>vpnagentd</string>
+                </dict>
+                <dict>
+                    <key>id</key>
+                    <string>google-chrome</string>
+                    <key>displayName</key>
+                    <string>Google Chrome</string>
+                    <key>appPath</key>
+                    <string>/Applications/Google Chrome.app</string>
+                    <key>targetVersion</key>
+                    <string>130.0.6723.92</string>
+                    <key>source</key>
+                    <string>jamfTrigger</string>
+                    <key>trigger</key>
+                    <string>threshold-chrome</string>
+                </dict>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

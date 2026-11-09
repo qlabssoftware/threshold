@@ -1,0 +1,14 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Build output (app bundle, packages, profiles)
+build/
+
+# Signing keys must never be committed
+*.key
+*.pem
+
+.DS_Store
+xcuserdata/

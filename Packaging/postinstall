@@ -1,0 +1,13 @@
+#!/bin/bash
+# Threshold pkg postinstall: (re)load the LaunchDaemon.
+# Safe mid-session: the daemon's SessionGate prevents a second run in the same boot.
+PLIST="/Library/LaunchDaemons/com.qlabs.threshold.plist"
+
+chown root:wheel "$PLIST" 2>/dev/null
+chmod 644 "$PLIST" 2>/dev/null
+
+launchctl bootout system/com.qlabs.threshold 2>/dev/null
+if ! launchctl bootstrap system "$PLIST"; then
+    echo "Threshold postinstall: launchctl bootstrap failed; the daemon will load at next boot" >&2
+fi
+exit 0

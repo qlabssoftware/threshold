@@ -1,0 +1,212 @@
+{
+  "title": "Threshold (com.qlabs.threshold)",
+  "description": "Runs app updates behind a blurred progress screen at the first login after each boot. Pre-1.0.",
+  "__version": "0.1.0",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "title": "Enabled",
+      "description": "Kill switch. Set to false and Threshold does nothing.",
+      "type": "boolean",
+      "default": true
+    },
+    "capSeconds": {
+      "title": "Blur cap (seconds)",
+      "description": "The blur lifts after this long. A running install is never killed; it continues in the background. 30 to 3600.",
+      "type": "integer",
+      "default": 300,
+      "minimum": 30,
+      "maximum": 3600
+    },
+    "maxConsecutiveFailures": {
+      "title": "Failures before quarantine",
+      "description": "An item that fails this many times in a row for the same target version is skipped until its target version changes. Minimum 1.",
+      "type": "integer",
+      "default": 3,
+      "minimum": 1
+    },
+    "minBatteryPercent": {
+      "title": "Minimum battery (%)",
+      "description": "On battery power, items are skipped below this charge. 0 to 100.",
+      "type": "integer",
+      "default": 20,
+      "minimum": 0,
+      "maximum": 100
+    },
+    "requireAC": {
+      "title": "Require AC power",
+      "description": "Skip installs unless the Mac is plugged in.",
+      "type": "boolean",
+      "default": false
+    },
+    "minFreeDiskGB": {
+      "title": "Minimum free disk (GB)",
+      "description": "Skip installs when free disk space is below this.",
+      "type": "number",
+      "default": 5,
+      "minimum": 0
+    },
+    "ignoredUsers": {
+      "title": "Ignored users",
+      "description": "Short names of accounts that never trigger Threshold.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "networkWaitSeconds": {
+      "title": "Network wait for Jamf items (seconds)",
+      "description": "If the Jamf Pro server is unreachable at login (Wi-Fi often joins after login), wait up to this long under the blur before skipping Jamf-trigger items. 0 = don't wait (and show no blur if only Jamf items are due).",
+      "type": "integer",
+      "default": 30,
+      "minimum": 0,
+      "maximum": 300
+    },
+    "title": {
+      "title": "Dialog title",
+      "type": "string",
+      "default": "Updating your Mac",
+      "minLength": 1
+    },
+    "message": {
+      "title": "Dialog message",
+      "type": "string",
+      "default": "Installing important updates. This usually takes a few minutes.",
+      "minLength": 1
+    },
+    "icon": {
+      "title": "Dialog icon",
+      "description": "Path or URL of an icon. Empty uses the default.",
+      "type": "string"
+    },
+    "supportText": {
+      "title": "Support text",
+      "description": "Shown when something fails.",
+      "type": "string",
+      "default": "If this keeps happening, contact IT.",
+      "minLength": 1
+    },
+    "items": {
+      "title": "Items",
+      "description": "Updates to run, in order.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "title": "Item",
+        "properties": {
+          "id": {
+            "title": "ID",
+            "description": "Stable identifier. Letters, digits, '.', '_' and '-' only. Must be unique.",
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "minLength": 1
+          },
+          "displayName": {
+            "title": "Display name",
+            "description": "Shown in the dialog. Defaults to the ID.",
+            "type": "string"
+          },
+          "icon": {
+            "title": "Icon",
+            "type": "string"
+          },
+          "appPath": {
+            "title": "App path",
+            "description": "Absolute path of the app to read the installed version from. Use this or versionCommand, not both.",
+            "type": "string"
+          },
+          "versionKey": {
+            "title": "Version key",
+            "description": "Info.plist key to read when appPath is used.",
+            "type": "string",
+            "default": "CFBundleShortVersionString"
+          },
+          "versionCommand": {
+            "title": "Version command",
+            "description": "Command that prints the installed version. Use this or appPath, not both.",
+            "type": "string"
+          },
+          "targetVersion": {
+            "title": "Target version",
+            "description": "Minimum acceptable version. Anything older is updated.",
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "title": "Source",
+            "type": "string",
+            "enum": [
+              "jamfTrigger",
+              "cachedPackage"
+            ]
+          },
+          "trigger": {
+            "title": "Jamf trigger",
+            "description": "Custom event name (jamfTrigger). No spaces.",
+            "type": "string"
+          },
+          "fallbackTrigger": {
+            "title": "Fallback Jamf trigger",
+            "description": "cachedPackage only. Jamf custom event to run when the cached package is unusable (missing, wrong sha256, bad signature or team ID, untrusted location). No spaces.",
+            "type": "string"
+          },
+          "packagePath": {
+            "title": "Package path",
+            "description": "Absolute path of the cached .pkg (cachedPackage). Must be in a root-owned directory chain, e.g. the Jamf Waiting Room.",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Package SHA-256",
+            "description": "64 hex characters (cachedPackage).",
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$"
+          },
+          "teamID": {
+            "title": "Signing Team ID",
+            "description": "10-character Apple Team ID the package must be signed by (cachedPackage).",
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{10}$"
+          },
+          "timeoutSeconds": {
+            "title": "Item timeout (seconds)",
+            "description": "Per-item cap. Defaults to capSeconds.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "preInstallScript": {
+            "title": "Pre-install script",
+            "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
+            "type": "string"
+          },
+          "postInstallScript": {
+            "title": "Post-install script",
+            "description": "Absolute path. Same ownership rules as the pre-install script.",
+            "type": "string"
+          },
+          "healthProcess": {
+            "title": "Health: process name",
+            "type": "string",
+            "description": "Setting any health key turns the post-install health check on."
+          },
+          "healthCommand": {
+            "title": "Health: command",
+            "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
+            "type": "string"
+          },
+          "healthURL": {
+            "title": "Health: URL",
+            "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "targetVersion",
+          "source"
+        ]
+      }
+    }
+  }
+}
