@@ -1,6 +1,6 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
-  "description": "Runs app updates behind a blurred progress screen at the first login after each boot. Pre-1.0.",
+  "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
   "__version": "1.0.0",
   "type": "object",
   "properties": {
@@ -89,122 +89,268 @@
     },
     "items": {
       "title": "Items",
-      "description": "Updates to run, in order.",
+      "description": "Updates to run, top to bottom. For each item, first choose Jamf policy or Cached package.",
       "type": "array",
       "default": [],
       "items": {
-        "type": "object",
         "title": "Item",
-        "properties": {
-          "id": {
-            "title": "ID",
-            "description": "Stable identifier. Letters, digits, '.', '_' and '-' only. Must be unique.",
-            "type": "string",
-            "pattern": "^[A-Za-z0-9._-]+$",
-            "minLength": 1
-          },
-          "displayName": {
-            "title": "Display name",
-            "description": "Shown in the dialog. Defaults to the ID.",
-            "type": "string"
-          },
-          "icon": {
-            "title": "Icon",
-            "type": "string"
-          },
-          "appPath": {
-            "title": "App path",
-            "description": "Absolute path of the app to read the installed version from. Use this or versionCommand, not both.",
-            "type": "string"
-          },
-          "versionKey": {
-            "title": "Version key",
-            "description": "Info.plist key to read when appPath is used.",
-            "type": "string",
-            "default": "CFBundleShortVersionString"
-          },
-          "versionCommand": {
-            "title": "Version command",
-            "description": "Command that prints the installed version. Use this or appPath, not both.",
-            "type": "string"
-          },
-          "targetVersion": {
-            "title": "Target version",
-            "description": "Minimum acceptable version. Anything older is updated.",
-            "type": "string",
-            "minLength": 1
-          },
-          "source": {
-            "title": "Source",
-            "type": "string",
-            "enum": [
-              "jamfTrigger",
-              "cachedPackage"
+        "oneOf": [
+          {
+            "title": "Jamf policy (custom trigger)",
+            "type": "object",
+            "properties": {
+              "id": {
+                "title": "ID",
+                "description": "Stable identifier. Letters, digits, '.', '_' and '-' only. Must be unique.",
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]+$",
+                "minLength": 1,
+                "propertyOrder": 1
+              },
+              "displayName": {
+                "title": "Display name",
+                "description": "Shown in the dialog. Defaults to the ID.",
+                "type": "string",
+                "propertyOrder": 2
+              },
+              "appPath": {
+                "title": "App path",
+                "description": "Full path of the app, e.g. /Applications/Google Chrome.app. No quotes. Use this or Version command, not both.",
+                "type": "string",
+                "propertyOrder": 3
+              },
+              "versionCommand": {
+                "title": "Version command",
+                "description": "Command that prints the installed version. Use this or appPath, not both.",
+                "type": "string",
+                "propertyOrder": 4
+              },
+              "versionKey": {
+                "title": "Version key",
+                "description": "Info.plist key to read when appPath is used.",
+                "type": "string",
+                "default": "CFBundleShortVersionString",
+                "propertyOrder": 5
+              },
+              "targetVersion": {
+                "title": "Target version",
+                "description": "Minimum acceptable version. Anything older is updated.",
+                "type": "string",
+                "minLength": 1,
+                "propertyOrder": 6
+              },
+              "source": {
+                "title": "Source",
+                "type": "string",
+                "enum": [
+                  "jamfTrigger"
+                ],
+                "default": "jamfTrigger",
+                "options": {
+                  "enum_titles": [
+                    "Jamf policy"
+                  ]
+                },
+                "description": "Set by your choice above. Leave as is.",
+                "propertyOrder": 7
+              },
+              "trigger": {
+                "title": "Jamf trigger",
+                "description": "Custom event name of the Jamf policy that installs the update. No spaces.",
+                "type": "string",
+                "pattern": "^\\S+$",
+                "minLength": 1,
+                "propertyOrder": 8
+              },
+              "icon": {
+                "title": "Icon",
+                "type": "string",
+                "propertyOrder": 9
+              },
+              "timeoutSeconds": {
+                "title": "Item timeout (seconds)",
+                "description": "Per-item cap. Defaults to capSeconds.",
+                "type": "integer",
+                "minimum": 1,
+                "propertyOrder": 10
+              },
+              "preInstallScript": {
+                "title": "Pre-install script",
+                "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
+                "type": "string",
+                "propertyOrder": 11
+              },
+              "postInstallScript": {
+                "title": "Post-install script",
+                "description": "Absolute path. Same ownership rules as the pre-install script.",
+                "type": "string",
+                "propertyOrder": 12
+              },
+              "healthProcess": {
+                "title": "Health: process name",
+                "type": "string",
+                "description": "Setting any health key turns the post-install health check on.",
+                "propertyOrder": 13
+              },
+              "healthCommand": {
+                "title": "Health: command",
+                "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
+                "type": "string",
+                "propertyOrder": 14
+              },
+              "healthURL": {
+                "title": "Health: URL",
+                "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
+                "type": "string",
+                "propertyOrder": 15
+              }
+            },
+            "required": [
+              "id",
+              "targetVersion",
+              "source",
+              "trigger"
             ]
           },
-          "trigger": {
-            "title": "Jamf trigger",
-            "description": "Custom event name (jamfTrigger). No spaces.",
-            "type": "string"
-          },
-          "fallbackTrigger": {
-            "title": "Fallback Jamf trigger",
-            "description": "cachedPackage only. Jamf custom event to run when the cached package is unusable (missing, wrong sha256, bad signature or team ID, untrusted location). No spaces.",
-            "type": "string"
-          },
-          "packagePath": {
-            "title": "Package path",
-            "description": "Absolute path of the cached .pkg (cachedPackage). Must be in a root-owned directory chain, e.g. the Jamf Waiting Room.",
-            "type": "string"
-          },
-          "sha256": {
-            "title": "Package SHA-256",
-            "description": "64 hex characters (cachedPackage).",
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{64}$"
-          },
-          "teamID": {
-            "title": "Signing Team ID",
-            "description": "10-character Apple Team ID the package must be signed by (cachedPackage).",
-            "type": "string",
-            "pattern": "^[A-Za-z0-9]{10}$"
-          },
-          "timeoutSeconds": {
-            "title": "Item timeout (seconds)",
-            "description": "Per-item cap. Defaults to capSeconds.",
-            "type": "integer",
-            "minimum": 1
-          },
-          "preInstallScript": {
-            "title": "Pre-install script",
-            "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
-            "type": "string"
-          },
-          "postInstallScript": {
-            "title": "Post-install script",
-            "description": "Absolute path. Same ownership rules as the pre-install script.",
-            "type": "string"
-          },
-          "healthProcess": {
-            "title": "Health: process name",
-            "type": "string",
-            "description": "Setting any health key turns the post-install health check on."
-          },
-          "healthCommand": {
-            "title": "Health: command",
-            "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
-            "type": "string"
-          },
-          "healthURL": {
-            "title": "Health: URL",
-            "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
-            "type": "string"
+          {
+            "title": "Cached package",
+            "type": "object",
+            "properties": {
+              "id": {
+                "title": "ID",
+                "description": "Stable identifier. Letters, digits, '.', '_' and '-' only. Must be unique.",
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]+$",
+                "minLength": 1,
+                "propertyOrder": 1
+              },
+              "displayName": {
+                "title": "Display name",
+                "description": "Shown in the dialog. Defaults to the ID.",
+                "type": "string",
+                "propertyOrder": 2
+              },
+              "appPath": {
+                "title": "App path",
+                "description": "Full path of the app, e.g. /Applications/Google Chrome.app. No quotes. Use this or Version command, not both.",
+                "type": "string",
+                "propertyOrder": 3
+              },
+              "versionCommand": {
+                "title": "Version command",
+                "description": "Command that prints the installed version. Use this or appPath, not both.",
+                "type": "string",
+                "propertyOrder": 4
+              },
+              "versionKey": {
+                "title": "Version key",
+                "description": "Info.plist key to read when appPath is used.",
+                "type": "string",
+                "default": "CFBundleShortVersionString",
+                "propertyOrder": 5
+              },
+              "targetVersion": {
+                "title": "Target version",
+                "description": "Minimum acceptable version. Anything older is updated.",
+                "type": "string",
+                "minLength": 1,
+                "propertyOrder": 6
+              },
+              "source": {
+                "title": "Source",
+                "type": "string",
+                "enum": [
+                  "cachedPackage"
+                ],
+                "default": "cachedPackage",
+                "options": {
+                  "enum_titles": [
+                    "Cached package"
+                  ]
+                },
+                "description": "Set by your choice above. Leave as is.",
+                "propertyOrder": 7
+              },
+              "packagePath": {
+                "title": "Package path",
+                "description": "Full path of the cached .pkg, e.g. /Library/Application Support/JAMF/Waiting Room/App.pkg. No quotes.",
+                "type": "string",
+                "pattern": "^/",
+                "minLength": 2,
+                "propertyOrder": 8
+              },
+              "sha256": {
+                "title": "Package SHA-256",
+                "description": "64 hex characters. Get it with: shasum -a 256 App.pkg",
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$",
+                "propertyOrder": 9
+              },
+              "teamID": {
+                "title": "Signing Team ID",
+                "description": "10-character Apple Team ID the package is signed by. Get it with: pkgutil --check-signature App.pkg",
+                "type": "string",
+                "pattern": "^[A-Za-z0-9]{10}$",
+                "propertyOrder": 10
+              },
+              "fallbackTrigger": {
+                "title": "Fallback Jamf trigger (optional)",
+                "description": "Jamf custom event to run instead if the cached package is missing or doesn't match. No spaces.",
+                "type": "string",
+                "propertyOrder": 11
+              },
+              "icon": {
+                "title": "Icon",
+                "type": "string",
+                "propertyOrder": 12
+              },
+              "timeoutSeconds": {
+                "title": "Item timeout (seconds)",
+                "description": "Per-item cap. Defaults to capSeconds.",
+                "type": "integer",
+                "minimum": 1,
+                "propertyOrder": 13
+              },
+              "preInstallScript": {
+                "title": "Pre-install script",
+                "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
+                "type": "string",
+                "propertyOrder": 14
+              },
+              "postInstallScript": {
+                "title": "Post-install script",
+                "description": "Absolute path. Same ownership rules as the pre-install script.",
+                "type": "string",
+                "propertyOrder": 15
+              },
+              "healthProcess": {
+                "title": "Health: process name",
+                "type": "string",
+                "description": "Setting any health key turns the post-install health check on.",
+                "propertyOrder": 16
+              },
+              "healthCommand": {
+                "title": "Health: command",
+                "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
+                "type": "string",
+                "propertyOrder": 17
+              },
+              "healthURL": {
+                "title": "Health: URL",
+                "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
+                "type": "string",
+                "propertyOrder": 18
+              }
+            },
+            "required": [
+              "id",
+              "targetVersion",
+              "source",
+              "packagePath",
+              "sha256",
+              "teamID"
+            ]
           }
-        },
-        "required": [
-          "id",
-          "targetVersion",
-          "source"
         ]
       }
     }
