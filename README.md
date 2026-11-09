@@ -21,7 +21,7 @@ The blur is a strong deterrent, not a security boundary.
 
 ## Install
 
-1. **Package.** Build with `Scripts/build-pkg.sh` (output: `build/Threshold-<version>.pkg`), then deploy it with your MDM. It is a component package: fine for a Jamf policy or `installer -pkg`, but MDM `InstallEnterpriseApplication` needs a signed distribution package, so wrap it (`productbuild --package ...`) first if you deploy that way. It installs the binary to `/Library/Application Support/Threshold/threshold` and the LaunchDaemon `/Library/LaunchDaemons/com.qlabs.threshold.plist`, and loads it. Installing mid-session is safe: a mid-session install will not blur unless the Mac booted less than 10 minutes ago (it is then treated as the first login of this boot). Set `SIGN_IDENTITY`, `INSTALLER_IDENTITY` and `NOTARY_PROFILE` to sign and notarize.
+1. **Package.** Download the signed and notarized `Threshold-<version>.pkg` from [Releases](https://github.com/qlabssoftware/threshold/releases/latest) and deploy it with your MDM (for example a Jamf policy). It installs the binary to `/Library/Application Support/Threshold/threshold` and the LaunchDaemon `/Library/LaunchDaemons/com.qlabs.threshold.plist`, and loads it. Installing mid-session is safe: a mid-session install will not blur unless the Mac booted less than 10 minutes ago (it is then treated as the first login of this boot).
 2. **Configuration profile.**
    - Jamf Pro: add `Packaging/com.qlabs.threshold.schema.json` as a custom schema under *Computers > Configuration Profiles > Application & Custom Settings > External Applications*, with preference domain `com.qlabs.threshold`. You get a form for every key.
    - Other MDMs: start from `Packaging/example.mobileconfig`. Its sha256 (64 zeros), team ID, paths and versions are placeholders; replace them.
@@ -178,7 +178,6 @@ Unmanaged VMs have no MDM, and macOS wipes `/Library/Managed Preferences` at boo
 
 ## Before fleet rollout
 
-- [ ] Build once with `SIGN_IDENTITY`, `INSTALLER_IDENTITY` and `NOTARY_PROFILE` set, and confirm the package passes Gatekeeper: `spctl -a -vv -t install build/Threshold-<version>.pkg` reports `accepted` and `source=Notarized Developer ID`.
 - [ ] On one real Jamf-enrolled Mac with the configuration profile installed, run `sudo "/Library/Application Support/Threshold/threshold" check` and confirm `testMode` is `false` and `plan` lists the items from the profile. Then restart, log in, and confirm `results.json` shows the same plan (`items`, `skipped`, `upToDate`) and an `overall` you expect.
 - [ ] On that Mac, confirm `/usr/local/bin/dialog` and `/usr/local/bin/jamf` pass the trust rules (`ls -ld /usr/local /usr/local/bin`, `ls -l /usr/local/bin/dialog /usr/local/bin/jamf`). If `results.json` says `swiftDialog missing, too old or untrusted`, reinstall swiftDialog (its app bundle must be root-owned).
 - [ ] Confirm neither `THRESHOLD_TEST_MODE` nor `THRESHOLD_ALLOW_UNSIGNED` exists in `/Library/Application Support/Threshold/`.
