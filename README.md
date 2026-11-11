@@ -9,6 +9,18 @@ At the first login after a restart, Threshold checks the apps you choose. If any
 - **Installs from Jamf policies or packages already on the Mac.** Cached packages are ideal for VPN clients, since they don't need the network.
 - **Gives up on broken updates.** An update that keeps failing stops retrying, so it can't block every login.
 
+## What users see
+
+Each app gets a card: a green check when it's updated, a red ✕ with the reason if it fails, and the one being installed highlighted. The window follows the user's light or dark mode.
+
+| Light mode | Dark mode |
+|---|---|
+| ![Threshold updating apps, light mode](images/modern-light.png) | ![Threshold updating apps, dark mode](images/modern-dark.png) |
+
+*Example run: Calendar updated, Notes failed (the installer ran but the version didn't change), Maps installing.*
+
+Prefer a plain list? Set **Window style** to Classic in the profile.
+
 ## Get started
 
 1. **Install swiftDialog** 3.0.1 or later on your Macs.
