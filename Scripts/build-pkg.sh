@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds build/Threshold-<version>.pkg (arm64). No sudo needed.
+# Builds build/Threshold-<version>.pkg: a distribution package (arm64, macOS 14+). No sudo needed.
 #
 #   Scripts/build-pkg.sh
 #   VERSION=1.2.3 SIGN_IDENTITY="Developer ID Application: …" \
@@ -39,17 +39,36 @@ chmod 0644 "$ROOT/Library/LaunchDaemons/com.qlabs.threshold.plist"
 
 mkdir -p build
 OUT="build/Threshold-${VERSION}.pkg"
-UNSIGNED="$STAGE/Threshold-unsigned.pkg"
+UNSIGNED="$STAGE/component/threshold.pkg"; mkdir -p "$STAGE/component"
 
 # Hand-assembled flat pkg (see Scripts/lib/flatpkg.sh for why pkgbuild is not used).
 flatpkg_build "$ROOT" "$SCRIPTS" "$PKG_ID" "$VERSION" "$UNSIGNED"
 
+# Wrap the component in a distribution (product) package: Jamf PreStage enrollment only accepts
+# signed distribution packages. The requirements stop installs on Intel or macOS < 14.
+cat > "$STAGE/requirements.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>os</key><array><string>14.0</string></array>
+    <key>arch</key><array><string>arm64</string></array>
+</dict>
+</plist>
+PLIST
+
 rm -f "$OUT"
+SIGN_ARGS=()
 if [ -n "${INSTALLER_IDENTITY:-}" ]; then
-    productsign --sign "$INSTALLER_IDENTITY" --timestamp "$UNSIGNED" "$OUT"
-else
-    cp "$UNSIGNED" "$OUT"
+    SIGN_ARGS=(--sign "$INSTALLER_IDENTITY" --timestamp)
 fi
+DIST="$STAGE/Distribution.xml"
+productbuild --synthesize --product "$STAGE/requirements.plist" --package "$UNSIGNED" "$DIST"
+# Give the product a title (shown by Installer and in install logs).
+sed -i '' 's|<installer-gui-script minSpecVersion="2">|&\
+    <title>Threshold</title>|' "$DIST"
+productbuild --distribution "$DIST" --package-path "$(dirname "$UNSIGNED")" \
+    --identifier "$PKG_ID" --version "$VERSION" ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} "$OUT"
 
 if [ -n "${NOTARY_PROFILE:-}" ]; then
     xcrun notarytool submit "$OUT" --keychain-profile "$NOTARY_PROFILE" --wait
