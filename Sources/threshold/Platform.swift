@@ -72,8 +72,14 @@ final class SystemPlatform: Platform {
     }
 
     func makePresenter(uid: uid_t, global: GlobalConfig) -> DialogPresenting {
-        SwiftDialogPresenter(dialogPath: global.swiftDialogPath, consoleUID: uid,
-                             commandFile: SwiftDialogPresenter.defaultCommandFile, launcher: launcher, clock: clock)
+        switch global.windowStyle {
+        case .modern:
+            return InspectPresenter(dialogPath: global.swiftDialogPath, consoleUID: uid, launcher: launcher, clock: clock)
+        case .classic:
+            return SwiftDialogPresenter(dialogPath: global.swiftDialogPath, consoleUID: uid,
+                                        commandFile: SwiftDialogPresenter.defaultCommandFile, launcher: launcher,
+                                        clock: clock)
+        }
     }
 
     /// posix_spawn with POSIX_SPAWN_SETSID: launchd reaps the daemon's process group on exit, so the

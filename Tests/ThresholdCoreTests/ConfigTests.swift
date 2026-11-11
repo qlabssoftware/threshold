@@ -157,3 +157,15 @@ private let cisco: [String: Any] = ["id": "cisco", "displayName": "Cisco Secure 
     #expect(c.global.minSwiftDialogVersion == Version("2.5.0")!)
     #expect(c.global.healthTimeoutSeconds == 60 && c.global.hookTimeoutSeconds == 120)
 }
+
+@Test func windowStyleDefaultsToModern() throws {
+    #expect(try Config.parse([:]).global.windowStyle == .modern)
+    #expect(try Config.parse(["windowStyle": "classic"]).global.windowStyle == .classic)
+    #expect(try Config.parse(["windowStyle": "Modern"]).global.windowStyle == .modern)
+    #expect(throws: ConfigError.invalidGlobal(key: "windowStyle", reason: "must be \"modern\" or \"classic\"")) {
+        try Config.parse(["windowStyle": "fancy"])
+    }
+    #expect(throws: ConfigError.invalidGlobal(key: "windowStyle", reason: "must be \"modern\" or \"classic\"")) {
+        try Config.parse(["windowStyle": 1])
+    }
+}

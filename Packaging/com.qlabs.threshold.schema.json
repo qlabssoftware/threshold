@@ -1,7 +1,7 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
   "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
-  "__version": "1.0.0",
+  "__version": "1.1.0",
   "type": "object",
   "properties": {
     "enabled": {
@@ -80,9 +80,25 @@
       "description": "Path or URL of an icon. Empty uses the default.",
       "type": "string"
     },
+    "windowStyle": {
+      "title": "Window style",
+      "description": "Modern: app cards with a progress bar (needs swiftDialog 3.0.1 or later; older swiftDialog automatically uses Classic). Classic: a simple list. Both follow the user's light or dark mode.",
+      "type": "string",
+      "default": "modern",
+      "enum": [
+        "modern",
+        "classic"
+      ],
+      "options": {
+        "enum_titles": [
+          "Modern (cards)",
+          "Classic (list)"
+        ]
+      }
+    },
     "supportText": {
       "title": "Support text",
-      "description": "Shown when something fails.",
+      "description": "Shown when something fails (Classic window only).",
       "type": "string",
       "default": "If this keeps happening, contact IT.",
       "minLength": 1

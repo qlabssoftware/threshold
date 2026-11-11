@@ -103,13 +103,13 @@ public final class SwiftDialogPresenter: DialogPresenting {
         try prepare(commandFile)
         let args = Self.blurArguments(items: items, global: global, commandFile: commandFile)
         let process = try launcher.launch("/bin/launchctl", ["asuser", String(consoleUID), dialogPath] + args)
-        try confirmStaysUp(process)
+        try Self.confirmStaysUp(process, clock: clock)
     }
 
     /// `launchctl asuser <uid> <cmd>` execs `<cmd>` in the user's bootstrap (same pid), so `process` is
     /// swiftDialog itself. The blur only exits on `quit:` or its timer, so an exit within the startup
     /// window means it failed (no GUI session, bad argument, crash): throw, so nothing installs silently.
-    private func confirmStaysUp(_ process: ManagedProcess) throws {
+    static func confirmStaysUp(_ process: ManagedProcess, clock: Clock) throws {
         let start = clock.now()
         while true {
             if !process.isRunning {
@@ -172,6 +172,12 @@ public final class SwiftDialogPresenter: DialogPresenting {
     // MARK: - Command files
 
     private func prepare(_ file: URL) throws {
+        try Self.prepare(file, requiredOwnerUID: requiredOwnerUID)
+    }
+
+    /// Creates (or truncates) `file` as a regular 0644 file in a directory that is not group/other-writable
+    /// and, if `requiredOwnerUID` is set, owned by that user. Refuses symlinks.
+    static func prepare(_ file: URL, requiredOwnerUID: uid_t?) throws {
         let fm = FileManager.default
         let dir = file.deletingLastPathComponent()
         try fm.createDirectory(at: dir, withIntermediateDirectories: true,
@@ -192,7 +198,9 @@ public final class SwiftDialogPresenter: DialogPresenting {
         fchmod(fd, 0o644)
     }
 
-    private func append(_ line: String, to file: URL) {
+    private func append(_ line: String, to file: URL) { Self.append(line, to: file) }
+
+    static func append(_ line: String, to file: URL) {
         guard let data = (line + "\n").data(using: .utf8),
               let handle = try? FileHandle(forWritingTo: file) else { return }
         defer { try? handle.close() }

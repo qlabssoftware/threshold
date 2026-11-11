@@ -778,3 +778,29 @@ private struct WorldVersions: VersionReading {
     #expect(w.fakeLauncher.launches.contains { $0.executable == real && $0.arguments.first == "policy" })
     #expect(w.detached.map(\.0) == [real])   // recon through the same trusted binary
 }
+
+@Test func modernWindowIsTheDefaultWithSwiftDialog3() {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    w.dialogVersion = "3.0.1.4955"
+    #expect(w.run() == 0)
+    #expect(w.presenterGlobals.map(\.windowStyle) == [.modern])
+    #expect(w.report?.items.map(\.state) == [.done])
+}
+
+@Test func swiftDialog2FallsBackToTheClassicWindow() {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    w.dialogVersion = "2.5.6.4805"
+    #expect(w.run() == 0)
+    #expect(w.presenterGlobals.map(\.windowStyle) == [.classic])
+    #expect(w.report?.items.map(\.state) == [.done])
+}
+
+@Test func classicWindowCanBeChosen() {
+    let w = World()
+    w.prefs = ["windowStyle": "classic", "items": [cachedItem("a")]]
+    w.dialogVersion = "3.1.1.5000"
+    #expect(w.run() == 0)
+    #expect(w.presenterGlobals.map(\.windowStyle) == [.classic])
+}

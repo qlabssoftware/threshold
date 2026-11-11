@@ -48,6 +48,7 @@ public enum CheckReport {
             "title": g.title,
             "message": g.message,
             "supportText": g.supportText,
+            "windowStyle": g.windowStyle.rawValue,
             "items": config.items.map(encode),
         ]
         if let icon = g.icon { out["icon"] = icon }

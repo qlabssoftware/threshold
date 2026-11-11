@@ -12,8 +12,10 @@
 #    stop anyway, wait_reboot starts it again with `vm.sh start` (tart run --no-graphics in the background).
 #  * The brief's "log shows waiting then installing" (scenario 3) is asserted from the dialog command file
 #    (statustext: Waiting / Installing); Threshold does not write per-state lines to the unified log.
-#  * Scenario 7 boots the daemon out of launchd right after kill -9, so only the dialog's own --timer can remove
-#    the blur; then it bootstraps the daemon again and checks it does not re-blur.
+#  * Scenario 7 boots the daemon out of launchd right after kill -9, so only the modern window's watchdog
+#    (capSeconds + 60) can remove the blur; then it bootstraps the daemon again and checks it does not re-blur.
+#  * Every scenario uses the default (modern) window except scenario 3, which runs the classic window: it reads
+#    the classic command file to prove Waiting came before Installing.
 #  * Each scenario runs in its own subshell with `set +e`; every guest step is checked explicitly (must/bail), so
 #    a failed reboot, results wait or setup step FAILs that scenario and the run continues to the summary.
 #    Scenario exit codes: 0 PASS, 1 FAIL, 2 SKIP (harness limitation); anything else counts as FAIL (aborted).
@@ -30,7 +32,8 @@ STATE="$SUPPORT/state.json"
 APP="/Applications/Threshold Dummy.app/Contents/Info.plist"
 TEST_CONFIG="$SUPPORT/test-config.plist"   # read instead of managed prefs because vm.sh up created THRESHOLD_TEST_MODE
 SUBSYSTEM='subsystem == "com.qlabs.threshold"'
-BLUR_PAT="/Library/Application Support/Threshold/run/[d]ialog.cmd"
+# The blur: the classic window carries run/dialog.cmd in its arguments, the modern one (default) run/inspect.json.
+BLUR_PAT="Threshold/run/([d]ialog[.]cmd|[i]nspect[.]json)"
 STILL_PAT="/Library/Application Support/Threshold/run/[s]till.cmd"
 WRONG_SHA="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
@@ -122,7 +125,7 @@ item_jamf() { # item_jamf <trigger> <target>
 XML
 }
 
-# push_config <item-xml> [capSeconds] [enabled true|false]
+# push_config <item-xml> [capSeconds] [enabled true|false]   (WINDOW_STYLE=classic for the classic window)
 push_config() {
     local file rc; file="$(mktemp)"
     {
@@ -130,6 +133,7 @@ push_config() {
         echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
         echo '<plist version="1.0"><dict>'
         echo "    <key>enabled</key><${3:-true}/>"
+        [ -z "${WINDOW_STYLE:-}" ] || echo "    <key>windowStyle</key><string>$WINDOW_STYLE</string>"
         [ -z "${2:-}" ] || echo "    <key>capSeconds</key><integer>$2</integer>"
         echo '    <key>items</key><array>'
         echo "$1"
@@ -154,7 +158,10 @@ reset_dummy() { # back to installed 1.0, clean leftovers
     [ "$(guest_version)" = "1.0" ]
 }
 # Fresh state: no state.json/results.json, and no stale dialog command files that could satisfy later assertions.
-reset_state() { g sudo rm -f "$STATE" "$RESULTS" "$SUPPORT/run/dialog.cmd" "$SUPPORT/run/still.cmd"; }
+reset_state() {
+    g sudo rm -f "$STATE" "$RESULTS" "$SUPPORT/run/dialog.cmd" "$SUPPORT/run/still.cmd" "$SUPPORT/run/inspect.json" \
+        /var/tmp/dialog.log
+}
 guest_version() { g plutil -extract CFBundleShortVersionString raw "$APP" 2>/dev/null || echo "?"; }
 guest_uuid() { gb sysctl -n kern.bootsessionuuid 2>/dev/null; }
 # Fails loudly if the log cannot be read, so an unreadable log can never look like "no launch".
@@ -162,7 +169,7 @@ guest_log() { g sudo log show --predicate "$SUBSYSTEM" --start "$LOGSTART" --inf
 launch_count() { # prints the number of blur launches since the reboot, or ERR
     local out
     out="$(guest_log 2>/dev/null)" || { echo ERR; return 1; }
-    printf '%s\n' "$out" | grep -c 'showing blur for' || true
+    printf '%s\n' "$out" | grep -c 'showing blur' || true
 }
 alive() { g pgrep -f "$1" >/dev/null 2>&1; } # returns 0 if a matching process exists
 alive_exact() { g pgrep -x "$1" >/dev/null 2>&1; }
@@ -285,8 +292,8 @@ s2() {
     else
         wait_results || bail "results.json not updated for the new boot within 600 s"
         require_log
-        if [ "$(launch_count)" = "1" ] && g sudo grep -q 'progress: complete' "$SUPPORT/run/dialog.cmd"; then
-            echo "  note blur process window missed; launch confirmed by log and dialog.cmd"
+        if [ "$(launch_count)" = "1" ] && g sudo grep -q '"preset2"' "$SUPPORT/run/inspect.json"; then
+            echo "  note blur process window missed; launch confirmed by log and inspect.json"
         else
             bail "blur dialog never appeared"
         fi
@@ -297,17 +304,21 @@ s2() {
     check "item state" "done" "$(rj items.0.state)"
     check "app version" "2.0" "$(guest_version)"
     check "blur launched exactly once (same log source as the no-launch scenarios)" "1" "$(launch_count)"
+    check_contains "modern window used" "showing blur (modern window)" "$(guest_log 2>&1)"
+    check_cmd "item marker created for the cards view" g sudo test -e "$SUPPORT/run/done/item0"
     check_cmd "no blur dialog alive at end" wait_gone "$BLUR_PAT" 30
+    check_not "shared /var/tmp/dialog.log removed after the run" g test -e /var/tmp/dialog.log
     check_cmd "no still-running dialog alive at end" wait_gone "$STILL_PAT" 5
     finish
 }
 
 s3() {
-    begin 3 "jamfTrigger dummy-2.0, target 2.0"
-    prepare "$(item_jamf dummy-2.0 2.0)"
+    begin 3 "jamfTrigger dummy-2.0, target 2.0 (classic window)"
+    WINDOW_STYLE=classic prepare "$(item_jamf dummy-2.0 2.0)"
     run_boot
     check "item state" "done" "$(rj items.0.state)"
     check "app version" "2.0" "$(guest_version)"
+    check_contains "classic window used" "showing blur (classic window)" "$(guest_log 2>&1)"
     local cmd; cmd="$(g sudo cat "$SUPPORT/run/dialog.cmd" 2>/dev/null || true)"
     check_contains "dialog showed Waiting" "statustext: Waiting" "$cmd"
     check_contains "dialog showed Installing" "statustext: Installing" "$cmd"
@@ -370,7 +381,7 @@ s6() {
 }
 
 s7() {
-    begin 7 "dummy-hang, cap 300, kill -9 the daemon 20 s after login; only the dialog timer can remove the blur"
+    begin 7 "dummy-hang, cap 300, kill -9 the daemon 20 s after login; only the window's watchdog can remove the blur"
     prepare "$(item_cached dummy-hang-2.0.pkg 2.0)" 300
     reboot_and_wait || bail "guest reboot did not complete"
     wait_alive "$BLUR_PAT" 600 || { kill_installs; bail "blur dialog never appeared"; }
@@ -381,7 +392,7 @@ s7() {
     # Take the job out of launchd now so it cannot relaunch (a relaunch would pkill the dialog via killStaleDialogs).
     check_cmd "daemon booted out of launchd" g sudo launchctl bootout system/com.qlabs.threshold
     check_not "no daemon process left" alive 'Application Support/Threshold/[t]hreshold daemon'
-    # The dialog was started with --timer capSeconds+60 = 360 s; allow 10 s for polling/exec latency.
+    # The watchdog closes the window at capSeconds+60 = 360 s; allow 10 s for polling/exec latency.
     if wait_gone "$BLUR_PAT" 420; then
         local elapsed=$(( $(date +%s) - t0 ))
         echo "  blur gone ${elapsed}s after launch (limit 360 + 10)"

@@ -23,6 +23,8 @@ public struct GlobalConfig: Equatable {
     public var message: String
     public var icon: String?
     public var supportText: String
+    /// Which swiftDialog window shows progress. `.modern` needs swiftDialog 3 and falls back to `.classic`.
+    public var windowStyle: WindowStyle
 
     /// Where else the standard installers put the real binaries. Tried, in order, when the standard path
     /// fails the trust check (e.g. `/usr/local/bin` owned by a user after Migration Assistant).
@@ -31,6 +33,13 @@ public struct GlobalConfig: Equatable {
         "/Library/Application Support/Dialog/Dialog.app/Contents/MacOS/Dialog",      // swiftDialog 2
     ]
     public static let jamfFallbacks = ["/usr/local/jamf/bin/jamf"]
+}
+
+/// `modern`: swiftDialog Inspect Mode cards (swiftDialog 3+). `classic`: the list window (swiftDialog 2.5+).
+public enum WindowStyle: String, Equatable {
+    case modern, classic
+    /// The first swiftDialog with Inspect Mode, item status commands and the cards layout.
+    public static let modernMinimumSwiftDialog = Version("3.0.1")!
 }
 
 public enum VersionProbe: Equatable {
@@ -172,6 +181,13 @@ public struct Config: Equatable {
             guard let a = v as? [Any], let s = a as? [String] else { throw bad("ignoredUsers", "must be an array of strings") }
             users = s
         }
+        var style = WindowStyle.modern
+        if let v = d["windowStyle"] {
+            guard let s = v as? String, let parsed = WindowStyle(rawValue: s.lowercased()) else {
+                throw bad("windowStyle", "must be \"modern\" or \"classic\"")
+            }
+            style = parsed
+        }
         var icon: String?
         if let v = d["icon"] {
             guard let s = v as? String else { throw bad("icon", "must be a string") }
@@ -195,7 +211,8 @@ public struct Config: Equatable {
             title: try string("title", "Updating your Mac"),
             message: try string("message", "Installing important updates. This usually takes a few minutes."),
             icon: icon,
-            supportText: try string("supportText", "If this keeps happening, contact IT."))
+            supportText: try string("supportText", "If this keeps happening, contact IT."),
+            windowStyle: style)
     }
 
     // MARK: - Items

@@ -11,7 +11,7 @@ At the first login after a restart, Threshold checks the apps you choose. If any
 
 ## Get started
 
-1. **Install swiftDialog** 2.5.0 or later on your Macs.
+1. **Install swiftDialog** 3.0.1 or later on your Macs.
 2. **Deploy the package.** Download `Threshold-<version>.pkg` from [Releases](https://github.com/qlabssoftware/threshold/releases/latest) and push it with your MDM.
 3. **Deploy a configuration profile** that lists the apps to keep updated.
 4. **Restart a test Mac and log in.**
@@ -21,7 +21,7 @@ Step-by-step instructions are in the [Getting Started guide](https://github.com/
 ## Requirements
 
 - Apple silicon, macOS 14 or later
-- [swiftDialog](https://github.com/swiftDialog/swiftDialog) 2.5.0 or later
+- [swiftDialog](https://github.com/swiftDialog/swiftDialog) 3.0.1 or later (2.5.0 works, with the classic window)
 - An MDM that can deploy a custom configuration profile
 - Jamf Pro, only if you install updates through Jamf policies
 
@@ -40,7 +40,7 @@ Everything else is in the **[wiki](https://github.com/qlabssoftware/threshold/wi
 
 ## Acknowledgements
 
-Threshold wouldn't be possible without [swiftDialog](https://github.com/swiftDialog/swiftDialog) by **Bart Reardon**. The blurred full-screen window, the live progress list and the "still updating" message are all swiftDialog. Huge thanks to Bart and everyone who contributes to swiftDialog for building and maintaining such a great tool for the Mac admin community. 🙏
+Threshold wouldn't be possible without [swiftDialog](https://github.com/swiftDialog/swiftDialog) by **Bart Reardon**. The blurred full-screen window, the app cards and progress list, and the "still updating" message are all swiftDialog. Huge thanks to Bart and everyone who contributes to swiftDialog for building and maintaining such a great tool for the Mac admin community. 🙏
 
 swiftDialog is MIT-licensed and installed separately; Threshold doesn't include it.
 

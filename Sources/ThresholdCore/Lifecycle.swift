@@ -137,8 +137,9 @@ public final class Lifecycle {
 
         // 9. No usable swiftDialog means no UI, so no installs.
         let dialogPath: String
+        let dialogVersion: Version
         switch usableSwiftDialog(global) {
-        case .success(let path): dialogPath = path
+        case .success(let usable): (dialogPath, dialogVersion) = usable
         case .failure(let unusable):
             log.error("\(unusable.reason); skipping all work")
             write(plan: loginPlan, results: skippedResults(loginPlan.work, unusable.reason),
@@ -150,6 +151,11 @@ public final class Lifecycle {
         let needsJamf = loginPlan.work.contains { if case .jamfTrigger = $0.item.source { return true }; return false }
         var runConfig = config
         runConfig.global.swiftDialogPath = dialogPath
+        if runConfig.global.windowStyle == .modern && dialogVersion < WindowStyle.modernMinimumSwiftDialog {
+            log.info("swiftDialog \(dialogVersion.raw) is older than \(WindowStyle.modernMinimumSwiftDialog.raw); "
+                     + "using the classic window")
+            runConfig.global.windowStyle = .classic
+        }
         if needsJamf, let jamf = trustedJamf(global) {
             runConfig.global.jamfBinaryPath = jamf
         }
@@ -166,7 +172,8 @@ public final class Lifecycle {
         }
 
         let presenter = platform.makePresenter(uid: user.uid, global: runConfig.global)
-        log.info("showing blur for \(loginPlan.work.map(\.item.id).joined(separator: ","))")
+        log.info("showing blur (\(runConfig.global.windowStyle.rawValue) window) for "
+                 + loginPlan.work.map(\.item.id).joined(separator: ","))
         let jamf = runConfig.global.jamfBinaryPath
         let launcher = platform.launcher
         let runner = Runner(config: runConfig, launcher: launcher, clock: clock,
@@ -316,7 +323,7 @@ public final class Lifecycle {
 
     /// The resolved swiftDialog path if it is trusted and new enough (it is never executed otherwise),
     /// or the reason it can't be used.
-    private func usableSwiftDialog(_ global: GlobalConfig) -> Result<String, SwiftDialogUnusable> {
+    private func usableSwiftDialog(_ global: GlobalConfig) -> Result<(path: String, version: Version), SwiftDialogUnusable> {
         guard let path = firstTrusted([global.swiftDialogPath] + GlobalConfig.swiftDialogFallbacks) else {
             log.error("swiftDialog at \(global.swiftDialogPath) (and inside Dialog.app) is missing or untrusted")
             return .failure(SwiftDialogUnusable(reason: "swiftDialog missing or untrusted"))
@@ -332,7 +339,7 @@ public final class Lifecycle {
                 log.error(reason)
                 return .failure(SwiftDialogUnusable(reason: reason))
             }
-            return .success(path)
+            return .success((path, version))
         }
     }
 
