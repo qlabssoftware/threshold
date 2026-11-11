@@ -12,8 +12,10 @@
 #    stop anyway, wait_reboot starts it again with `vm.sh start` (tart run --no-graphics in the background).
 #  * The brief's "log shows waiting then installing" (scenario 3) is asserted from the dialog command file
 #    (statustext: Waiting / Installing); Threshold does not write per-state lines to the unified log.
-#  * Scenario 7 boots the daemon out of launchd right after kill -9, so only the modern window's watchdog
-#    (capSeconds + 60) can remove the blur; then it bootstraps the daemon again and checks it does not re-blur.
+#  * Scenario 7 kills the daemon (-9) and boots it out of launchd, then requires the blur to be gone within
+#    capSeconds + 60. In practice launchd removes the job's dialog with it (seen: ~20 s), which is the safe outcome;
+#    the window's own watchdog (capSeconds + 60) is the backstop and is tested directly in InspectPresenterTests.
+#    Then it bootstraps the daemon again and checks it does not re-blur.
 #  * Every scenario uses the default (modern) window except scenario 3, which runs the classic window: it reads
 #    the classic command file to prove Waiting came before Installing.
 #  * Each scenario runs in its own subshell with `set +e`; every guest step is checked explicitly (must/bail), so
@@ -381,7 +383,7 @@ s6() {
 }
 
 s7() {
-    begin 7 "dummy-hang, cap 300, kill -9 the daemon 20 s after login; only the window's watchdog can remove the blur"
+    begin 7 "dummy-hang, cap 300, kill -9 the daemon 20 s after login; the blur must still go away"
     prepare "$(item_cached dummy-hang-2.0.pkg 2.0)" 300
     reboot_and_wait || bail "guest reboot did not complete"
     wait_alive "$BLUR_PAT" 600 || { kill_installs; bail "blur dialog never appeared"; }
