@@ -17,7 +17,7 @@ Each app gets a card: a green check when it's updated, a red ✕ with the reason
 |---|---|
 | ![Threshold updating apps, light mode](images/modern-light.png) | ![Threshold updating apps, dark mode](images/modern-dark.png) |
 
-*Example run: Calendar updated, Notes failed (the installer ran but the version didn't change), Maps installing.*
+*Example run with test packages: Google Chrome updated, Slack failed (simulated: the installer ran but the version didn't change), Zoom installing.*
 
 Prefer a plain list? Set **Window style** to Classic in the profile.
 
