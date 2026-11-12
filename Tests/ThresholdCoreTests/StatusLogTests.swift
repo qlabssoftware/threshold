@@ -47,4 +47,21 @@ struct StatusLogTests {
         #expect(line.count == StatusLog.maxLength)
         #expect(line.hasSuffix("…"))
     }
+
+    @Test func onlyLinesWrittenAfterTheMarkAreShown() throws {
+        let path = file("yesterday: unrelated\n")
+        defer { unlink(path) }
+        let mark = StatusLog.currentSize(path: path)
+        #expect(StatusLog.latestLine(path: path, after: mark) == nil)        // nothing new yet: card keeps "Installing"
+        let h = try FileHandle(forWritingTo: URL(fileURLWithPath: path))
+        h.seekToEndOfFile(); h.write("installer: Package name is Zoom\n".data(using: .utf8)!); try h.close()
+        #expect(StatusLog.latestLine(path: path, after: mark) == "installer: Package name is Zoom")
+    }
+
+    @Test func aRotatedLogIsReadFromTheStart() {
+        let path = file("new file after rotation\n")
+        defer { unlink(path) }
+        #expect(StatusLog.latestLine(path: path, after: 10_000) == "new file after rotation")
+        #expect(StatusLog.currentSize(path: "/nonexistent/thr.log") == 0)
+    }
 }

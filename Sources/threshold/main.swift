@@ -1,7 +1,7 @@
 import Foundation
 import ThresholdCore
 
-let thresholdVersion = "1.2.0"
+let thresholdVersion = "1.3.0"
 
 func usage() -> Never {
     FileHandle.standardError.write(Data("usage: threshold daemon | check | version\n".utf8))

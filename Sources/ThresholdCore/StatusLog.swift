@@ -7,16 +7,26 @@ public enum StatusLog {
     /// Only the end of the file is read: logs can be large.
     static let tailBytes = 8192
 
-    /// The newest non-empty line of the regular file at `path`, cleaned, or nil (missing, not a regular file,
-    /// unreadable, empty).
-    public static func latestLine(path: String) -> String? {
+    /// The current size of the regular file at `path` (0 if missing): pass it to `latestLine(path:after:)` so
+    /// only lines written from now on are shown, never an old, unrelated one.
+    public static func currentSize(path: String) -> Int {
+        var st = stat()
+        guard stat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return 0 }
+        return Int(st.st_size)
+    }
+
+    /// The newest non-empty line written after byte `offset` of the regular file at `path`, cleaned, or nil
+    /// (missing, not a regular file, unreadable, nothing new). A file that shrank (rotated) is read from the start.
+    public static func latestLine(path: String, after offset: Int = 0) -> String? {
         let fd = open(path, O_RDONLY | O_NONBLOCK)
         guard fd >= 0 else { return nil }
         defer { close(fd) }
         var st = stat()
         guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }
         let size = Int(st.st_size)
-        let start = max(0, size - tailBytes)
+        let from = offset <= size ? offset : 0
+        guard size > from else { return nil }
+        let start = max(from, size - tailBytes)
         var buffer = [UInt8](repeating: 0, count: size - start)
         guard !buffer.isEmpty else { return nil }
         let count = buffer.withUnsafeMutableBytes { pread(fd, $0.baseAddress, $0.count, off_t(start)) }

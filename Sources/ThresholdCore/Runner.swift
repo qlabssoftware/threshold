@@ -55,14 +55,15 @@ public final class Runner {
     private let trustedHookPath: (String) -> String?
     /// Waits (under the blur) for the Jamf Pro server until the given time; true once it answers.
     private let jamfRecheck: ((Date) -> Bool)?
-    /// The newest line of the admin's `statusLog`, shown under an item while it waits or installs; nil = off.
-    private let statusLine: (() -> String?)?
+    /// The admin's `statusLog`: `mark()` is called when an item's install starts and returns a reader for the
+    /// newest line written since then, shown under the item while it waits or installs; nil = off.
+    private let statusLine: (() -> () -> String?)?
 
     public init(config: Config, launcher: ProcessLauncher, clock: Clock, versions: VersionReading,
                 dialog: DialogPresenting,
                 trustedHookPath: @escaping (String) -> String? = HookTrust.trustedCanonicalPath(_:),
                 jamfRecheck: ((Date) -> Bool)? = nil,
-                statusLine: (() -> String?)? = nil) {
+                statusLine: (() -> () -> String?)? = nil) {
         self.jamfRecheck = jamfRecheck
         self.statusLine = statusLine
         self.config = config
@@ -182,6 +183,7 @@ public final class Runner {
 
         // 3. Poll until exit or the item deadline.
         var shownLine: String?
+        let newestLine = statusLine?()   // only lines this install writes, never an old one
         while process.isRunning {
             // Sticky: once installing (or unknown), never back to waiting.
             if state == .waiting, process.hasDescendant(otherThan: Self.jamfBenignDescendants) != false {
@@ -189,7 +191,7 @@ public final class Runner {
                 dialog.update(index: index, state: state, detail: nil)
                 shownLine = nil
             }
-            if let statusLine, let line = statusLine(), line != shownLine {
+            if let newestLine, let line = newestLine(), line != shownLine {
                 shownLine = line
                 dialog.update(index: index, state: state, detail: line)
             }

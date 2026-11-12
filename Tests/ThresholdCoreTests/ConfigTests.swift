@@ -181,3 +181,13 @@ private let cisco: [String: Any] = ["id": "cisco", "displayName": "Cisco Secure 
     }
     #expect(throws: (any Error).self) { try Config.parse(["blurScreen": "no"]) }
 }
+
+@Test func installIfMissingParses() throws {
+    #expect(try Config.parse(["items": [cisco]]).items[0].installIfMissing == false)
+    var item = cisco; item["installIfMissing"] = true
+    #expect(try Config.parse(["items": [item]]).items[0].installIfMissing == true)
+    item["installIfMissing"] = "yes"
+    let c = try Config.parse(["items": [item]])
+    #expect(c.items.isEmpty)
+    #expect(c.invalidItems.first?.reason.contains("installIfMissing must be a boolean") == true)
+}

@@ -37,6 +37,7 @@ private final class Harness {
     var notes: [String: String] = [:]
     /// The status-log reader handed to the Runner (nil = statusLog off).
     var statusLine: (() -> String?)?
+    private(set) var statusMarks = 0
     private var origin: Date
 
     lazy var launcher: FakeLauncher = FakeLauncher { [unowned self] exe, args in self.make(exe, args) }
@@ -96,7 +97,8 @@ private final class Harness {
         }
         let runner = Runner(config: config, launcher: launcher, clock: clock, versions: versions, dialog: dialog,
                             trustedHookPath: { untrusted.contains($0) ? nil : canonical[$0] ?? $0 },
-                            jamfRecheck: recheck, statusLine: statusLine)
+                            jamfRecheck: recheck,
+                            statusLine: statusLine.map { read in { [unowned self] in self.statusMarks += 1; return read } })
         return runner.run(plan, safety: safety)
     }
 
@@ -664,4 +666,12 @@ private let unreachable = SafetyResult(globalBlock: nil, jamfBlock: "Jamf Pro se
     let updates = h.dialog.calls.filter { if case .update = $0 { return true }; return false }
     #expect(Array(updates.prefix(4)) == [.update(0, .waiting, nil), .update(0, .waiting, "jamf: Executing Policy"),
                                          .update(0, .installing, nil), .update(0, .installing, "jamf: Executing Policy")])
+}
+
+@Test func statusLogIsMarkedOncePerInstall() throws {
+    let h = Harness()
+    h.specs["a"] = Spec(runsFor: 3); h.specs["b"] = Spec(runsFor: 3)
+    h.statusLine = { nil }
+    _ = try h.run([pkgItem("a"), pkgItem("b")])
+    #expect(h.statusMarks == 2)
 }

@@ -76,6 +76,7 @@ public enum CheckReport {
         }
         if let icon = item.icon { out["icon"] = icon }
         if let s = item.fallbackTrigger { out["fallbackTrigger"] = s }
+        if item.installIfMissing { out["installIfMissing"] = true }
         if let s = item.preInstallScript { out["preInstallScript"] = s }
         if let s = item.postInstallScript { out["postInstallScript"] = s }
         if let s = item.health.process { out["healthProcess"] = s }

@@ -853,3 +853,18 @@ private struct WorldVersions: VersionReading {
     #expect(w.run() == 0)
     #expect(w.awake.isEmpty)
 }
+
+@Test func newBuildInstallsAMissingApp() {
+    let w = World()
+    var a = cachedItem("a"); a["installIfMissing"] = true
+    w.prefs = ["items": [a, cachedItem("b")]]
+    w.installed["a"] = .notInstalled
+    w.installed["b"] = .notInstalled
+    #expect(w.run() == 0)
+    #expect(w.report?.items.map(\.id) == ["a"])
+    #expect(w.report?.items.first?.state == .done)
+    #expect(w.report?.items.first?.versionBefore == "0")
+    #expect(w.report?.items.first?.versionAfter == "2.0")
+    #expect(w.report?.skipped.map(\.id) == ["b"])
+    #expect(w.report?.overall == "OK")
+}

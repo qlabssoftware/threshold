@@ -170,3 +170,18 @@ private func withFallback(_ item: [String: Any], _ trigger: String = "fallback-a
     #expect(p.work.isEmpty)
     #expect(p.skipped == [SkippedItem(id: "a", reason: "cached package missing", countsAsFailure: false)])
 }
+
+@Test func missingAppIsInstalledWhenInstallIfMissing() throws {
+    var a = jamfItem("a"); a["installIfMissing"] = true
+    var b = pkgItem("b"); b["installIfMissing"] = true
+    let p = try plan([a, b, jamfItem("c")], ["a": .notInstalled, "b": .notInstalled, "c": .notInstalled])
+    #expect(p.work.map(\.item.id) == ["a", "b"])
+    #expect(p.work.map(\.installed) == [Version("0")!, Version("0")!])
+    #expect(p.skipped == [SkippedItem(id: "c", reason: "not installed", countsAsFailure: false)])
+}
+
+@Test func installIfMissingDoesNothingWhenTheAppIsCurrent() throws {
+    var a = jamfItem("a"); a["installIfMissing"] = true
+    let p = try plan([a], ["a": v("2.0")])
+    #expect(p.upToDate == ["a"] && !p.hasWork)
+}

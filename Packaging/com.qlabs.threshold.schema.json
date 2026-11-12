@@ -1,7 +1,7 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
   "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
-  "__version": "1.2.0",
+  "__version": "1.3.0",
   "type": "object",
   "properties": {
     "enabled": {
@@ -166,6 +166,13 @@
                 "minLength": 1,
                 "propertyOrder": 6
               },
+              "installIfMissing": {
+                "title": "Install if missing",
+                "description": "On: if the app isn't on the Mac yet (new builds), install it. Off (default): Threshold only updates apps that are already installed and skips missing ones.",
+                "type": "boolean",
+                "default": false,
+                "propertyOrder": 7
+              },
               "source": {
                 "title": "Source",
                 "type": "string",
@@ -179,7 +186,7 @@
                   ]
                 },
                 "description": "Set by your choice above. Leave as is.",
-                "propertyOrder": 7
+                "propertyOrder": 8
               },
               "trigger": {
                 "title": "Jamf trigger",
@@ -187,49 +194,49 @@
                 "type": "string",
                 "pattern": "^\\S+$",
                 "minLength": 1,
-                "propertyOrder": 8
+                "propertyOrder": 9
               },
               "icon": {
                 "title": "Icon",
                 "type": "string",
-                "propertyOrder": 9
+                "propertyOrder": 10
               },
               "timeoutSeconds": {
                 "title": "Item timeout (seconds)",
                 "description": "Per-item cap. Defaults to capSeconds.",
                 "type": "integer",
                 "minimum": 1,
-                "propertyOrder": 10
+                "propertyOrder": 11
               },
               "preInstallScript": {
                 "title": "Pre-install script",
                 "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
                 "type": "string",
-                "propertyOrder": 11
+                "propertyOrder": 12
               },
               "postInstallScript": {
                 "title": "Post-install script",
                 "description": "Absolute path. Same ownership rules as the pre-install script.",
                 "type": "string",
-                "propertyOrder": 12
+                "propertyOrder": 13
               },
               "healthProcess": {
                 "title": "Health: process name",
                 "type": "string",
                 "description": "Setting any health key turns the post-install health check on.",
-                "propertyOrder": 13
+                "propertyOrder": 14
               },
               "healthCommand": {
                 "title": "Health: command",
                 "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
                 "type": "string",
-                "propertyOrder": 14
+                "propertyOrder": 15
               },
               "healthURL": {
                 "title": "Health: URL",
                 "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
                 "type": "string",
-                "propertyOrder": 15
+                "propertyOrder": 16
               }
             },
             "required": [
@@ -283,6 +290,13 @@
                 "minLength": 1,
                 "propertyOrder": 6
               },
+              "installIfMissing": {
+                "title": "Install if missing",
+                "description": "On: if the app isn't on the Mac yet (new builds), install it. Off (default): Threshold only updates apps that are already installed and skips missing ones.",
+                "type": "boolean",
+                "default": false,
+                "propertyOrder": 7
+              },
               "source": {
                 "title": "Source",
                 "type": "string",
@@ -296,7 +310,7 @@
                   ]
                 },
                 "description": "Set by your choice above. Leave as is.",
-                "propertyOrder": 7
+                "propertyOrder": 8
               },
               "packagePath": {
                 "title": "Package path",
@@ -304,69 +318,69 @@
                 "type": "string",
                 "pattern": "^/",
                 "minLength": 2,
-                "propertyOrder": 8
+                "propertyOrder": 9
               },
               "sha256": {
                 "title": "Package SHA-256",
                 "description": "64 hex characters. Get it with: shasum -a 256 App.pkg",
                 "type": "string",
                 "pattern": "^[0-9a-fA-F]{64}$",
-                "propertyOrder": 9
+                "propertyOrder": 10
               },
               "teamID": {
                 "title": "Signing Team ID",
                 "description": "10-character Apple Team ID the package is signed by. Get it with: pkgutil --check-signature App.pkg",
                 "type": "string",
                 "pattern": "^[A-Za-z0-9]{10}$",
-                "propertyOrder": 10
+                "propertyOrder": 11
               },
               "fallbackTrigger": {
                 "title": "Fallback Jamf trigger (optional)",
                 "description": "Jamf custom event to run instead if the cached package is missing or doesn't match. No spaces.",
                 "type": "string",
-                "propertyOrder": 11
+                "propertyOrder": 12
               },
               "icon": {
                 "title": "Icon",
                 "type": "string",
-                "propertyOrder": 12
+                "propertyOrder": 13
               },
               "timeoutSeconds": {
                 "title": "Item timeout (seconds)",
                 "description": "Per-item cap. Defaults to capSeconds.",
                 "type": "integer",
                 "minimum": 1,
-                "propertyOrder": 13
+                "propertyOrder": 14
               },
               "preInstallScript": {
                 "title": "Pre-install script",
                 "description": "Absolute path. Must be root-owned and not group/other-writable, including parent directories.",
                 "type": "string",
-                "propertyOrder": 14
+                "propertyOrder": 15
               },
               "postInstallScript": {
                 "title": "Post-install script",
                 "description": "Absolute path. Same ownership rules as the pre-install script.",
                 "type": "string",
-                "propertyOrder": 15
+                "propertyOrder": 16
               },
               "healthProcess": {
                 "title": "Health: process name",
                 "type": "string",
                 "description": "Setting any health key turns the post-install health check on.",
-                "propertyOrder": 16
+                "propertyOrder": 17
               },
               "healthCommand": {
                 "title": "Health: command",
                 "description": "Passes when it exits 0. Setting any health key turns the post-install health check on.",
                 "type": "string",
-                "propertyOrder": 17
+                "propertyOrder": 18
               },
               "healthURL": {
                 "title": "Health: URL",
                 "description": "http(s) URL that must be reachable. Setting any health key turns the post-install health check on.",
                 "type": "string",
-                "propertyOrder": 18
+                "propertyOrder": 19
               }
             },
             "required": [

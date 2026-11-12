@@ -1,7 +1,7 @@
 #!/bin/bash
 # Threshold end-to-end scenarios, run against the Tart VM prepared by vm.sh up.
 #
-#   scenarios.sh <1-9>|all
+#   scenarios.sh <1-10>|all
 #
 # Each scenario writes a test-mode config (test-config.plist; macOS wipes managed preferences at boot on an unmanaged VM) into the guest, resets state and the dummy app
 # (except where noted), reboots the guest, waits for results.json of the new boot and asserts.
@@ -471,9 +471,24 @@ s9() {
     finish
 }
 
+s10() {
+    begin 10 "new build: dummy not installed, installIfMissing, cached dummy-2.0.pkg"
+    prepare "$(item_cached dummy-2.0.pkg 2.0 | sed 's|<key>targetVersion</key>|<key>installIfMissing</key><true/>\
+            <key>targetVersion</key>|')"
+    must g sudo rm -rf "/Applications/Threshold Dummy.app"
+    check "dummy removed before the boot" "?" "$(guest_version)"
+    run_boot
+    check "item state" "done" "$(rj items.0.state)"
+    check "version before" "0" "$(rj items.0.versionBefore)"
+    check "app installed" "2.0" "$(guest_version)"
+    check "overall" "OK" "$(rj overall)"
+    check "blur launched exactly once" "1" "$(launch_count)"
+    finish
+}
+
 # ---------------------------------------------------------------- main
 
-[ $# -eq 1 ] || { echo "usage: $0 <1-9>|all" >&2; exit 2; }
+[ $# -eq 1 ] || { echo "usage: $0 <1-10>|all" >&2; exit 2; }
 [ -f "$BUILD/checksums.txt" ] || { echo "error: run make-fixtures.sh first" >&2; exit 1; }
 vm_running || "$HERE/vm.sh" start || { echo "error: cannot start $VM" >&2; exit 1; }
 LOGSTART="$(g date '+%Y-%m-%d %H:%M:%S')"
@@ -491,9 +506,9 @@ run_scenario() { # runs s<n> in a subshell without errexit; its exit code is the
 }
 
 case "$1" in
-    all) for n in 1 2 3 4 5 6 7 8 9; do run_scenario "$n"; done ;;
-    [1-9]) run_scenario "$1" ;;
-    *) echo "usage: $0 <1-9>|all" >&2; exit 2 ;;
+    all) for n in 1 2 3 4 5 6 7 8 9 10; do run_scenario "$n"; done ;;
+    [1-9]|10) run_scenario "$1" ;;
+    *) echo "usage: $0 <1-10>|all" >&2; exit 2 ;;
 esac
 
 echo

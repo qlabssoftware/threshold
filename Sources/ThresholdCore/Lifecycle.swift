@@ -190,7 +190,10 @@ public final class Lifecycle {
                             jamfRecheck: { [clock] until in
                                 Safety.waitForJamf(jamf, launcher: launcher, clock: clock, until: until)
                             },
-                            statusLine: statusLog.map { path in { StatusLog.latestLine(path: path) } })
+                            statusLine: statusLog.map { path in {
+                                let offset = StatusLog.currentSize(path: path)
+                                return { StatusLog.latestLine(path: path, after: offset) }
+                            } })
         let outcome = runner.run(loginPlan.work, safety: safety)
         releaseDisplay()   // the blur is gone; the display may sleep again
         var results = outcome.results

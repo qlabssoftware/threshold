@@ -78,6 +78,9 @@ public struct Item: Equatable {
     /// For a cached package: the Jamf custom trigger to run instead when the package is unusable
     /// (missing, wrong checksum, bad signature, untrusted location).
     public var fallbackTrigger: String? = nil
+    /// Install the app when it isn't on the Mac yet (new builds), as if version 0 were installed.
+    /// false: a missing app is skipped ("not installed"), as before 1.3.0.
+    public var installIfMissing: Bool = false
 }
 
 public struct InvalidItem: Equatable, Codable {
@@ -311,6 +314,12 @@ public struct Config: Equatable {
             }
         }
 
+        var installIfMissing = false
+        if let v = d["installIfMissing"] {
+            guard let b = asBool(v) else { throw fail("installIfMissing must be a boolean") }
+            installIfMissing = b
+        }
+
         var timeout = defaultTimeout
         if let v = d["timeoutSeconds"] {
             guard let n = asInt(v), n > 0 else { throw fail("timeoutSeconds must be a positive integer") }
@@ -338,6 +347,7 @@ public struct Config: Equatable {
             postInstallScript: try absPath("postInstallScript"),
             health: HealthCheck(process: try optString("healthProcess"),
                                 command: try optString("healthCommand"), url: url),
-            fallbackTrigger: fallback)
+            fallbackTrigger: fallback,
+            installIfMissing: installIfMissing)
     }
 }
