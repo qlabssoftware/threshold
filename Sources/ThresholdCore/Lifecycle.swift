@@ -27,6 +27,9 @@ public protocol Platform: AnyObject {
     func makePresenter(uid: uid_t, global: GlobalConfig) -> DialogPresenting
     /// Starts a process in its own session so it outlives the daemon.
     func launchDetached(_ executable: String, _ arguments: [String]) throws
+    /// Keeps the Mac awake (like `caffeinate`) until the returned closure is called. `display`: also keep the
+    /// display on. Failure to take the assertion is logged and returns a no-op.
+    func keepAwake(display: Bool, reason: String) -> () -> Void
 }
 
 /// The once-per-boot sequence: plan before login, wait for the first eligible login, re-read the config,
@@ -171,17 +174,25 @@ public final class Lifecycle {
             return 0
         }
 
+        // Installs must not stall because the user walked away: display and idle sleep are blocked while the
+        // blur is up, idle sleep while installs continue in the background (step 13).
+        let releaseDisplay = platform.keepAwake(display: true, reason: "Threshold is installing updates")
+        let releaseSystem = platform.keepAwake(display: false, reason: "Threshold is installing updates")
+        defer { releaseDisplay(); releaseSystem() }   // idempotent; also covers early returns
         let presenter = platform.makePresenter(uid: user.uid, global: runConfig.global)
         log.info("showing blur (\(runConfig.global.windowStyle.rawValue) window) for "
                  + loginPlan.work.map(\.item.id).joined(separator: ","))
         let jamf = runConfig.global.jamfBinaryPath
         let launcher = platform.launcher
+        let statusLog = runConfig.global.statusLog
         let runner = Runner(config: runConfig, launcher: launcher, clock: clock,
                             versions: platform.versions, dialog: presenter,
                             jamfRecheck: { [clock] until in
                                 Safety.waitForJamf(jamf, launcher: launcher, clock: clock, until: until)
-                            })
+                            },
+                            statusLine: statusLog.map { path in { StatusLog.latestLine(path: path) } })
         let outcome = runner.run(loginPlan.work, safety: safety)
+        releaseDisplay()   // the blur is gone; the display may sleep again
         var results = outcome.results
         for r in results {
             log.info("item \(r.id): \(r.state.rawValue)\(r.reason.map { " (\($0))" } ?? "")")

@@ -49,9 +49,11 @@ public enum CheckReport {
             "message": g.message,
             "supportText": g.supportText,
             "windowStyle": g.windowStyle.rawValue,
+            "blurScreen": g.blurScreen,
             "items": config.items.map(encode),
         ]
         if let icon = g.icon { out["icon"] = icon }
+        if let statusLog = g.statusLog { out["statusLog"] = statusLog }
         return out
     }
 

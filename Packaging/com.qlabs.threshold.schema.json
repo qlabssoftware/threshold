@@ -1,7 +1,7 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
   "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
-  "__version": "1.1.0",
+  "__version": "1.2.0",
   "type": "object",
   "properties": {
     "enabled": {
@@ -95,6 +95,17 @@
           "Classic (list)"
         ]
       }
+    },
+    "blurScreen": {
+      "title": "Blur the screen",
+      "description": "On (default): the desktop is blurred and blocked while updates install. Off: the progress window shows over a usable desktop, for testing or gentler rollouts; users can then work, or restart, during installs.",
+      "type": "boolean",
+      "default": true
+    },
+    "statusLog": {
+      "title": "Status log",
+      "description": "Optional. Full path of a log file, e.g. /var/log/install.log. While an app waits or installs, the newest line of this log is shown under it. Users see that text, so pick a log that's fine to show. Empty: the usual Installing / Done text.",
+      "type": "string"
     },
     "supportText": {
       "title": "Support text",

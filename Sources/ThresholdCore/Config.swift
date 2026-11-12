@@ -25,6 +25,11 @@ public struct GlobalConfig: Equatable {
     public var supportText: String
     /// Which swiftDialog window shows progress. `.modern` needs swiftDialog 3 and falls back to `.classic`.
     public var windowStyle: WindowStyle
+    /// false: no blur and no always-on-top; the progress window still shows and can't be quit (testing,
+    /// gentler rollouts).
+    public var blurScreen: Bool
+    /// Absolute path of a log whose newest line is shown under the item while it waits or installs; nil = off.
+    public var statusLog: String?
 
     /// Where else the standard installers put the real binaries. Tried, in order, when the standard path
     /// fails the trust check (e.g. `/usr/local/bin` owned by a user after Migration Assistant).
@@ -188,6 +193,14 @@ public struct Config: Equatable {
             }
             style = parsed
         }
+        var statusLog: String?
+        if let v = d["statusLog"] {
+            guard let s = v as? String else { throw bad("statusLog", "must be a string") }
+            if !s.isEmpty {
+                guard s.hasPrefix("/") else { throw bad("statusLog", "must be an absolute path") }
+                statusLog = s
+            }
+        }
         var icon: String?
         if let v = d["icon"] {
             guard let s = v as? String else { throw bad("icon", "must be a string") }
@@ -212,7 +225,9 @@ public struct Config: Equatable {
             message: try string("message", "Installing important updates. This usually takes a few minutes."),
             icon: icon,
             supportText: try string("supportText", "If this keeps happening, contact IT."),
-            windowStyle: style)
+            windowStyle: style,
+            blurScreen: try bool("blurScreen", true),
+            statusLog: statusLog)
     }
 
     // MARK: - Items

@@ -169,3 +169,15 @@ private let cisco: [String: Any] = ["id": "cisco", "displayName": "Cisco Secure 
         try Config.parse(["windowStyle": 1])
     }
 }
+
+@Test func blurScreenAndStatusLog() throws {
+    let d = try Config.parse([:]).global
+    #expect(d.blurScreen && d.statusLog == nil)
+    let g = try Config.parse(["blurScreen": false, "statusLog": "/var/log/install.log"]).global
+    #expect(!g.blurScreen && g.statusLog == "/var/log/install.log")
+    #expect(try Config.parse(["statusLog": ""]).global.statusLog == nil)
+    #expect(throws: ConfigError.invalidGlobal(key: "statusLog", reason: "must be an absolute path")) {
+        try Config.parse(["statusLog": "install.log"])
+    }
+    #expect(throws: (any Error).self) { try Config.parse(["blurScreen": "no"]) }
+}

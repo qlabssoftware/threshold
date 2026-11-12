@@ -18,9 +18,14 @@ public final class InspectPresenter: DialogPresenting {
     static let defaultIcon = "sf=arrow.down.app.fill"
 
     /// Runs swiftDialog and outlives the daemon: `$1` dialog, `$2` config, `$3` seconds until forced close,
-    /// `$4` quit key. Exits with swiftDialog, so a launch failure is still seen by `confirmStaysUp`.
+    /// `$4` quit key, `$5` 1 = blur the screen and stay on top. Exits with swiftDialog, so a launch failure is
+    /// still seen by `confirmStaysUp`.
     static let watchdogScript = """
-        "$1" --inspect-mode --inspect-config "$2" --blurscreen --ontop --quitkey "$4" &
+        if [ "$5" = 1 ]; then
+            "$1" --inspect-mode --inspect-config "$2" --blurscreen --ontop --quitkey "$4" &
+        else
+            "$1" --inspect-mode --inspect-config "$2" --quitkey "$4" &
+        fi
         d=$!
         trap 'kill "$d" 2>/dev/null' TERM HUP INT
         ( sleep "$3"; kill "$d" 2>/dev/null ) &
@@ -87,7 +92,7 @@ public final class InspectPresenter: DialogPresenting {
             "message": SwiftDialogPresenter.sanitize(global.message),
             "icon": global.icon ?? defaultIcon,
             "size": "standard",
-            "options": ["moveable": false, "windowbuttons": ""],
+            "options": ["moveable": !global.blurScreen, "windowbuttons": ""],
             "scanInterval": 1,
             "button1text": "Please wait...",
             "button1disabled": true,
@@ -104,7 +109,7 @@ public final class InspectPresenter: DialogPresenting {
         switch state {
         case .pending: (status, message) = ("pending", "Pending")
         case .waiting: (status, message) = ("pending", detail ?? "Waiting")
-        case .installing: (status, message) = ("installing", "Installing")
+        case .installing: (status, message) = ("installing", detail ?? "Installing")
         case .verifying: (status, message) = ("installing", "Verifying")
         case .healthCheck: (status, message) = ("installing", "Checking")
         case .stillRunning: (status, message) = ("installing", "Still installing")
@@ -130,7 +135,8 @@ public final class InspectPresenter: DialogPresenting {
 
         let quitKey = "\u{E000}"   // same as the classic window: no keyboard layout produces it
         let args = ["asuser", String(consoleUID), "/bin/sh", "-c", Self.watchdogScript, "threshold-dialog",
-                    dialogPath, configFile.path, String(global.capSeconds + 60), quitKey]
+                    dialogPath, configFile.path, String(global.capSeconds + 60), quitKey,
+                    global.blurScreen ? "1" : "0"]
         let process = try launcher.launch("/bin/launchctl", args)
         self.process = process
         try SwiftDialogPresenter.confirmStaysUp(process, clock: clock)

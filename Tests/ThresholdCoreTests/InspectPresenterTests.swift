@@ -88,7 +88,7 @@ struct InspectPresenterTests {
         #expect(Array(args.prefix(4)) == ["asuser", "501", "/bin/sh", "-c"])
         #expect(args[4] == InspectPresenter.watchdogScript)
         #expect(Array(args.dropFirst(5)) == ["threshold-dialog", "/usr/local/bin/dialog",
-                                             run.appendingPathComponent("inspect.json").path, "360", "\u{E000}"])
+                                             run.appendingPathComponent("inspect.json").path, "360", "\u{E000}", "1"])
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: run.appendingPathComponent("inspect.json")))
         #expect((json as? [String: Any])?["preset"] as? String == "preset2")
         #expect(try String(contentsOf: shared, encoding: .utf8) == "")   // recreated empty
@@ -165,14 +165,14 @@ struct InspectPresenterTests {
 
     // MARK: - The real watchdog script, with a stand-in for swiftDialog
 
-    private func runWatchdog(dialogBody: String, timeout: String, dir: URL) throws -> Process {
+    private func runWatchdog(dialogBody: String, timeout: String, dir: URL, blur: String = "1") throws -> Process {
         let fake = dir.appendingPathComponent("fake-dialog")
         try "#!/bin/sh\n\(dialogBody)\n".write(to: fake, atomically: true, encoding: .utf8)
         chmod(fake.path, 0o755)
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
         p.arguments = ["-c", InspectPresenter.watchdogScript, "threshold-dialog", fake.path,
-                       dir.appendingPathComponent("inspect.json").path, timeout, "\u{E000}"]
+                       dir.appendingPathComponent("inspect.json").path, timeout, "\u{E000}", blur]
         try p.run()
         return p
     }
@@ -193,6 +193,30 @@ struct InspectPresenterTests {
         let args = try String(contentsOfFile: out, encoding: .utf8).split(separator: "\n").map(String.init)
         #expect(args == ["--inspect-mode", "--inspect-config", dir.appendingPathComponent("inspect.json").path,
                          "--blurscreen", "--ontop", "--quitkey", "\u{E000}"])
+    }
+
+    @Test func watchdogWithoutBlurDropsBlurAndOnTop() throws {
+        let dir = makeDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("args").path
+        let p = try runWatchdog(dialogBody: "printf '%s\\n' \"$@\" > '\(out)'", timeout: "30", dir: dir, blur: "0")
+        #expect(waitForExit(p, within: 5))
+        let args = try String(contentsOfFile: out, encoding: .utf8).split(separator: "\n").map(String.init)
+        #expect(args == ["--inspect-mode", "--inspect-config", dir.appendingPathComponent("inspect.json").path,
+                         "--quitkey", "\u{E000}"])
+    }
+
+    @Test func blurOffMakesTheWindowMoveableAndPassesTheFlag() throws {
+        var g = global(); g.blurScreen = false
+        let c = InspectPresenter.config(items: [item("a")], global: g, markerDirectory: URL(fileURLWithPath: "/m"))
+        #expect((c["options"] as? [String: Any])?["moveable"] as? Bool == true)
+        let on = InspectPresenter.config(items: [item("a")], global: global(), markerDirectory: URL(fileURLWithPath: "/m"))
+        #expect((on["options"] as? [String: Any])?["moveable"] as? Bool == false)
+    }
+
+    @Test func installingShowsTheStatusLine() {
+        #expect(InspectPresenter.command(index: 0, state: .installing, detail: "PackageKit: Extracting files")
+                == "item:item0:installing:PackageKit: Extracting files")
     }
 
     @Test func watchdogClosesTheDialogOnSigterm() throws {

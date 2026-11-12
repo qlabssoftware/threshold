@@ -35,6 +35,8 @@ private final class Harness {
     private(set) var recheckDeadlines: [TimeInterval] = []
     /// Planner notes by item id.
     var notes: [String: String] = [:]
+    /// The status-log reader handed to the Runner (nil = statusLog off).
+    var statusLine: (() -> String?)?
     private var origin: Date
 
     lazy var launcher: FakeLauncher = FakeLauncher { [unowned self] exe, args in self.make(exe, args) }
@@ -94,7 +96,7 @@ private final class Harness {
         }
         let runner = Runner(config: config, launcher: launcher, clock: clock, versions: versions, dialog: dialog,
                             trustedHookPath: { untrusted.contains($0) ? nil : canonical[$0] ?? $0 },
-                            jamfRecheck: recheck)
+                            jamfRecheck: recheck, statusLine: statusLine)
         return runner.run(plan, safety: safety)
     }
 
@@ -636,4 +638,30 @@ private let unreachable = SafetyResult(globalBlock: nil, jamfBlock: "Jamf Pro se
     let out = try h.run([jamfItem("a")])
     #expect(out.results[0].state == .done)
     #expect(out.results[0].reason == "cached package missing; used fallback trigger")
+}
+
+@Test func statusLogLineIsShownWhileInstallingAndOnlyWhenItChanges() throws {
+    let h = Harness()
+    h.specs["a"] = Spec(runsFor: 6)
+    let start = h.clock.now()
+    h.statusLine = {
+        let t = h.clock.now().timeIntervalSince(start)
+        return t < 3 ? "Extracting files" : "Running package scripts"
+    }
+    let out = try h.run([pkgItem("a")])
+    #expect(out.results.map(\.state) == [.done])
+    #expect(h.dialog.calls == [.blur(["a"]), .update(0, .installing, nil),
+                               .update(0, .installing, "Extracting files"),
+                               .update(0, .installing, "Running package scripts"),
+                               .update(0, .verifying, nil), .update(0, .done, nil), .finish(true)])
+}
+
+@Test func statusLogStartsOverWhenAWaitingPolicyStartsInstalling() throws {
+    let h = Harness()
+    h.specs["j"] = Spec(runsFor: 6, descendant: { $0 >= 3 })
+    h.statusLine = { "jamf: Executing Policy" }
+    _ = try h.run([jamfItem("j")])
+    let updates = h.dialog.calls.filter { if case .update = $0 { return true }; return false }
+    #expect(Array(updates.prefix(4)) == [.update(0, .waiting, nil), .update(0, .waiting, "jamf: Executing Policy"),
+                                         .update(0, .installing, nil), .update(0, .installing, "jamf: Executing Policy")])
 }

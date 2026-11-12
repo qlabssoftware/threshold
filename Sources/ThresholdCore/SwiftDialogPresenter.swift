@@ -42,8 +42,8 @@ public final class SwiftDialogPresenter: DialogPresenting {
     public static func blurArguments(items: [Item], global: GlobalConfig, commandFile: URL) -> [String] {
         var args = ["--title", sanitize(global.title), "--message", sanitize(global.message)]
         if let icon = global.icon { args += ["--icon", icon] }
-        args += ["--blurscreen", "--ontop",
-                 "--commandfile", commandFile.path,
+        if global.blurScreen { args += ["--blurscreen", "--ontop"] }
+        args += ["--commandfile", commandFile.path,
                  "--timer", String(global.capSeconds + 60),
                  "--hidetimerbar", "--button1disabled",
                  // swiftDialog quits on Cmd+<quitkey>. U+E000 is a private-use character that no keyboard
@@ -70,7 +70,7 @@ public final class SwiftDialogPresenter: DialogPresenting {
         switch state {
         case .pending: mapping = "status: pending, statustext: Pending"
         case .waiting: mapping = "status: pending, statustext: \(sanitize(detail ?? "Waiting", commas: true))"
-        case .installing: mapping = "status: wait, statustext: Installing"
+        case .installing: mapping = "status: wait, statustext: \(sanitize(detail ?? "Installing", commas: true))"
         case .verifying: mapping = "status: wait, statustext: Verifying"
         case .healthCheck: mapping = "status: wait, statustext: Checking"
         case .done: mapping = "status: success, statustext: Done"

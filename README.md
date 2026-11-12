@@ -8,6 +8,7 @@ At the first login after a restart, Threshold checks the apps you choose. If any
 - **Never traps anyone.** The blur always lifts after a time limit (5 minutes by default).
 - **Installs from Jamf policies or packages already on the Mac.** Cached packages are ideal for VPN clients, since they don't need the network.
 - **Gives up on broken updates.** An update that keeps failing stops retrying, so it can't block every login.
+- **Keeps the Mac awake while it works**, and can show a live log line under each app.
 
 ## What users see
 

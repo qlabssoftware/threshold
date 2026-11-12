@@ -136,6 +136,7 @@ push_config() {
         echo '<plist version="1.0"><dict>'
         echo "    <key>enabled</key><${3:-true}/>"
         [ -z "${WINDOW_STYLE:-}" ] || echo "    <key>windowStyle</key><string>$WINDOW_STYLE</string>"
+        [ -z "${STATUS_LOG:-}" ] || echo "    <key>statusLog</key><string>$STATUS_LOG</string>"
         [ -z "${2:-}" ] || echo "    <key>capSeconds</key><integer>$2</integer>"
         echo '    <key>items</key><array>'
         echo "$1"
@@ -336,10 +337,16 @@ s3() {
 }
 
 s4() {
-    begin 4 "cached dummy-hang-2.0.pkg, capSeconds 60"
-    prepare "$(item_cached dummy-hang-2.0.pkg 2.0)" 60
+    begin 4 "cached dummy-hang-2.0.pkg, capSeconds 60, statusLog install.log; Mac kept awake"
+    STATUS_LOG=/var/log/install.log prepare "$(item_cached dummy-hang-2.0.pkg 2.0)" 60
     reboot_and_wait || bail "guest reboot did not complete"
     wait_alive "$BLUR_PAT" 300 || { kill_installs; bail "blur dialog never appeared"; }
+    sleep 10
+    local asserts; asserts="$(g pmset -g assertions 2>/dev/null || true)"
+    check_contains "display kept awake while the blur is up" "PreventUserIdleDisplaySleep named: \"Threshold is installing updates\"" "$asserts"
+    check_contains "system kept awake while the blur is up" "PreventUserIdleSystemSleep named: \"Threshold is installing updates\"" "$asserts"
+    local status; status="$(g sudo cat /var/tmp/dialog.log 2>/dev/null | grep '^item:item0:installing:' | grep -v ':Installing$' | tail -1)"
+    if [ -n "$status" ]; then echo "  ok   install.log line shown on the card ($status)"; else fail "install.log line shown on the card"; fi
     wait_results || { kill_installs; bail "results.json not updated for the new boot within 600 s"; }
     require_log
     check "item state" "stillRunning" "$(rj items.0.state)"
@@ -348,6 +355,9 @@ s4() {
     check_cmd "installer process still running" alive_exact installer
     check_cmd "still-running dialog present" wait_alive "$STILL_PAT" 30
     check_cmd "blur dialog gone" wait_gone "$BLUR_PAT" 30
+    asserts="$(g pmset -g assertions 2>/dev/null || true)"
+    check_not "display hold released when the blur lifted" grep -q "PreventUserIdleDisplaySleep named: \"Threshold" <<< "$asserts"
+    check_contains "system still kept awake for the background install" "PreventUserIdleSystemSleep named: \"Threshold is installing updates\"" "$asserts"
     kill_installs
     finish
 }

@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import IOKit.ps
+import IOKit.pwr_mgt
 import SystemConfiguration
 import ThresholdCore
 
@@ -79,6 +80,25 @@ final class SystemPlatform: Platform {
             return SwiftDialogPresenter(dialogPath: global.swiftDialogPath, consoleUID: uid,
                                         commandFile: SwiftDialogPresenter.defaultCommandFile, launcher: launcher,
                                         clock: clock)
+        }
+    }
+
+    func keepAwake(display: Bool, reason: String) -> () -> Void {
+        let type = display ? kIOPMAssertionTypePreventUserIdleDisplaySleep : kIOPMAssertionTypePreventUserIdleSystemSleep
+        var id: IOPMAssertionID = 0
+        let rc = IOPMAssertionCreateWithName(type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                                             reason as CFString, &id)
+        guard rc == kIOReturnSuccess else {
+            Log.shared.error("could not keep the Mac awake (\(display ? "display" : "system"), IOKit \(rc))")
+            return {}
+        }
+        let lock = NSLock()
+        var released = false
+        return {
+            lock.lock(); defer { lock.unlock() }
+            guard !released else { return }
+            released = true
+            IOPMAssertionRelease(id)
         }
     }
 

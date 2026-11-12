@@ -285,3 +285,20 @@ struct PresenterTests {
 private struct NeverRead: VersionReading {
     func read(_ probe: VersionProbe) -> InstalledVersion { .unreadable("not expected") }
 }
+
+extension PresenterTests {
+    @Test func classicBlurOffDropsBlurAndOnTop() {
+        var g = try! Config.parse([:]).global
+        g.blurScreen = false
+        let args = SwiftDialogPresenter.blurArguments(items: [], global: g, commandFile: URL(fileURLWithPath: "/c"))
+        #expect(!args.contains("--blurscreen") && !args.contains("--ontop"))
+        #expect(args.contains("--quitkey"))   // still can't be quit
+    }
+
+    @Test func classicInstallingShowsTheStatusLine() {
+        #expect(SwiftDialogPresenter.command(index: 1, state: .installing, detail: "Downloading 3,1 MB")
+                == "listitem: index: 1, status: wait, statustext: Downloading 3 1 MB")
+        #expect(SwiftDialogPresenter.command(index: 1, state: .installing, detail: nil)
+                == "listitem: index: 1, status: wait, statustext: Installing")
+    }
+}

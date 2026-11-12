@@ -183,6 +183,22 @@ private final class World: Platform {
         detached.append((executable, arguments))
     }
 
+    /// "+display", "+system", "-display", "-system", in order.
+    private(set) var awake: [String] = []
+    /// Called when an assertion is released, with the matching event.
+    var onAwakeRelease: ((String) -> Void)?
+    func keepAwake(display: Bool, reason: String) -> () -> Void {
+        let kind = display ? "display" : "system"
+        awake.append("+" + kind)
+        var released = false
+        return { [unowned self] in
+            guard !released else { return }
+            released = true
+            awake.append("-" + kind)
+            onAwakeRelease?("-" + kind)
+        }
+    }
+
     // Helpers
     var state: PersistentState { stateStore.load() }
 
@@ -803,4 +819,37 @@ private struct WorldVersions: VersionReading {
     w.dialogVersion = "3.1.1.5000"
     #expect(w.run() == 0)
     #expect(w.presenterGlobals.map(\.windowStyle) == [.classic])
+}
+
+@Test func macStaysAwakeOnlyWhileTheBlurIsUp() {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    #expect(w.run() == 0)
+    #expect(w.awake == ["+display", "+system", "-display", "-system"])
+}
+
+@Test func macStaysAwakeUntilABackgroundInstallFinishes() throws {
+    let w = World()
+    w.prefs = ["capSeconds": 300, "items": [cachedItem("a")]]
+    w.installRunsFor["a"] = 1000
+    w.installDescendant["a"] = true
+    var installRunningAtDisplayRelease: Bool?
+    var installRunningAtSystemRelease: Bool?
+    w.onAwakeRelease = { event in
+        let running = w.installs["a"]?.isRunning
+        if event == "-display" { installRunningAtDisplayRelease = running }
+        if event == "-system" { installRunningAtSystemRelease = running }
+    }
+    #expect(w.run() == 0)
+    #expect(w.awake == ["+display", "+system", "-display", "-system"])
+    #expect(installRunningAtDisplayRelease == true)   // blur lifted at the cap: the display may sleep
+    #expect(installRunningAtSystemRelease == false)   // but the Mac stayed awake until the install ended
+}
+
+@Test func nothingToDoNeverKeepsTheMacAwake() {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a")]]
+    w.installed["a"] = .version(Version("2.0")!)
+    #expect(w.run() == 0)
+    #expect(w.awake.isEmpty)
 }
