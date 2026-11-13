@@ -1,6 +1,6 @@
 #!/bin/bash
 # Jamf extension attribute: Threshold last-run status.
-# Prints (with a "TEST MODE: " prefix when the Mac runs in test mode) OK, FAILED: ..., STILL RUNNING: ..., QUARANTINED: ..., BLOCKED: ...,
+# Prints (with a "TEST MODE: " prefix when the Mac runs in test mode) OK, FAILED: ..., STILL RUNNING: ..., QUARANTINED: ..., SKIPPED: ..., BLOCKED: ...,
 # DISABLED, OS BELOW MINIMUM: ..., CONFIG ERROR: ..., ERROR: ..., or NO RESULTS (not installed / never ran).
 RESULTS="/Library/Application Support/Threshold/results.json"
 # Test VMs only: results from the test-mode config source are prefixed with "TEST MODE: ".

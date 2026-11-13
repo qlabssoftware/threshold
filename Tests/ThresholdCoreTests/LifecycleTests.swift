@@ -747,7 +747,7 @@ private struct WorldVersions: VersionReading {
     #expect(w.presenters.isEmpty)
     #expect(w.installs.isEmpty)
     #expect(w.report?.skipped == [SkippedItem(id: "a", reason: "hook not trusted", countsAsFailure: false)])
-    #expect(w.report?.overall == "OK")
+    #expect(w.report?.overall == "SKIPPED: a (hook not trusted)")
 }
 
 // MARK: - Cancelled Jamf waits count toward quarantine
@@ -815,6 +815,27 @@ private struct WorldVersions: VersionReading {
     #expect(report.items.first?.reason == "cached package missing; used fallback trigger")
     #expect(w.fakeLauncher.launches.contains { $0.arguments == ["policy", "-event", "installa"] })
     #expect(!w.fakeLauncher.launches.contains { $0.executable == "/usr/sbin/installer" })
+}
+
+@Test func missingCachedPackagesWithoutFallbackShowNothingAndReportSkipped() throws {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a"), cachedItem("b")]]
+    w.packageChecks["/Library/Caches/a.pkg"] = .missing
+    w.packageChecks["/Library/Caches/b.pkg"] = .missing
+    #expect(w.run() == 0)
+    #expect(w.presenters.isEmpty)
+    #expect(w.report?.overall == "SKIPPED: a (cached package missing), b (cached package missing)")
+}
+
+@Test func oneMissingCachedPackageInstallsTheOthersAndReportsSkipped() throws {
+    let w = World()
+    w.prefs = ["items": [cachedItem("a"), cachedItem("b"), cachedItem("c")]]
+    w.packageChecks["/Library/Caches/b.pkg"] = .missing
+    #expect(w.run() == 0)
+    #expect(w.presenters.first?.calls.first == "blur:a,c")
+    let report = try #require(w.report)
+    #expect(report.items.map(\.id) == ["a", "c"])
+    #expect(report.overall == "SKIPPED: b (cached package missing)")
 }
 
 // MARK: - Standard binary locations (no path keys)
