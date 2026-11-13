@@ -7,6 +7,7 @@ At the first login after a restart, Threshold checks the apps you choose. If any
 - **Set up through your MDM.** One configuration profile, nothing for users to click.
 - **Never traps anyone.** The blur always lifts after a time limit (5 minutes by default).
 - **Installs from Jamf policies or packages already on the Mac.** Cached packages are ideal for VPN clients, since they don't need the network.
+- **Can wait for a macOS upgrade.** Set a minimum macOS version and Threshold stays quiet until the Mac is on it, then runs at the first login after the upgrade.
 - **Gives up on broken updates.** An update that keeps failing stops retrying, so it can't block every login.
 - **Keeps the Mac awake while it works**, and can show a live log line under each app.
 
