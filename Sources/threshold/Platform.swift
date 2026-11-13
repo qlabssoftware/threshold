@@ -64,6 +64,11 @@ final class SystemPlatform: Platform {
         return Date().timeIntervalSince1970 - booted
     }
 
+    func osVersion() -> Version {
+        let v = ProcessInfo.processInfo.operatingSystemVersion
+        return Version("\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)")!
+    }
+
     func fileExists(_ path: String) -> Bool { FileManager.default.fileExists(atPath: path) }
 
     func killStaleDialogs() {

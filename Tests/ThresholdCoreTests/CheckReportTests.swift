@@ -21,6 +21,7 @@ private struct OKPackages: PackageVerifying {
     let config = try #require(json["config"] as? [String: Any])
     #expect(config["capSeconds"] as? Int == 300)
     #expect(config["networkWaitSeconds"] as? Int == 30)
+    #expect(config["minimumOSVersion"] == nil)
     #expect(config["swiftDialogPath"] == nil && config["jamfBinaryPath"] == nil)
     #expect((config["items"] as? [Any])?.isEmpty == true)
     #expect((json["invalidItems"] as? [Any])?.isEmpty == true)
@@ -89,4 +90,11 @@ private struct OKPackages: PackageVerifying {
     #expect(encoded["fallbackTrigger"] as? String == "install-cisco")
     #expect(encoded["healthProcess"] as? String == "vpnagentd")
     #expect(encoded["networkCritical"] == nil)
+}
+
+@Test func checkReportShowsMinimumOSVersion() throws {
+    let (json, _) = CheckReport.make(prefs: ["minimumOSVersion": "27"], state: PersistentState(),
+                                     versions: FixedVersions(answers: [:]), packages: OKPackages())
+    let config = try #require(json["config"] as? [String: Any])
+    #expect(config["minimumOSVersion"] as? String == "27")
 }

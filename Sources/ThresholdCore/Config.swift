@@ -5,6 +5,9 @@ import Foundation
 /// install-layout details, not policy); the daemon swaps in resolved, trust-checked paths at run time.
 public struct GlobalConfig: Equatable {
     public var enabled: Bool
+    /// Threshold runs only on this macOS version or later (e.g. 27 = macOS 27, 27.x, 28, ...); nil = any.
+    /// Below it the daemon exits before planning: no blur, no installs.
+    public var minimumOSVersion: Version?
     public var capSeconds: Int
     public var maxConsecutiveFailures: Int
     public var minBatteryPercent: Int
@@ -204,6 +207,19 @@ public struct Config: Equatable {
                 statusLog = s
             }
         }
+        var minimumOS: Version?
+        if let v = d["minimumOSVersion"] {
+            // A string ("27", "26.4") is the documented form; a number is accepted for hand-written profiles.
+            let text = (v as? String) ?? (v as? NSNumber).flatMap { CFGetTypeID($0) == CFBooleanGetTypeID() ? nil : $0.stringValue }
+            guard let text else { throw bad("minimumOSVersion", "must be a version string such as \"27\"") }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                guard let parsed = Version(trimmed), trimmed.allSatisfy({ $0.isNumber || $0 == "." }) else {
+                    throw bad("minimumOSVersion", "must be a version such as \"27\" or \"26.4\"")
+                }
+                minimumOS = parsed
+            }
+        }
         var icon: String?
         if let v = d["icon"] {
             guard let s = v as? String else { throw bad("icon", "must be a string") }
@@ -212,6 +228,7 @@ public struct Config: Equatable {
 
         return GlobalConfig(
             enabled: try bool("enabled", true),
+            minimumOSVersion: minimumOS,
             capSeconds: try int("capSeconds", 300, 30...3600),
             maxConsecutiveFailures: try int("maxConsecutiveFailures", 3, 1...Int.max),
             minBatteryPercent: try int("minBatteryPercent", 20, 0...100),
