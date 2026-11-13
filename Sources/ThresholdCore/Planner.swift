@@ -66,7 +66,7 @@ public enum Planner {
             let installed: Version
             switch versions.read(item.probe) {
             case .notInstalled:
-                guard item.installIfMissing else { skip(item, "not installed"); continue }
+                guard item.installIfMissing else { skip(item, notInstalledReason); continue }
                 installed = Version("0")!   // new build: install it
             case let .unreadable(detail): skip(item, "version unreadable: \(detail)"); continue
             case let .version(version): installed = version

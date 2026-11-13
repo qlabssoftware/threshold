@@ -14,11 +14,26 @@ struct ResultsTests {
         #expect(overallStatus(results: [r("a", .failed)],
                               skipped: [SkippedItem(id: "s", reason: "x", countsAsFailure: true),
                                         SkippedItem(id: "n", reason: "x", countsAsFailure: false)],
-                              quarantined: []) == "FAILED: a,s")
+                              quarantined: []) == "FAILED: a,s; SKIPPED: n (x)")
         #expect(overallStatus(results: [r("a", .stillRunning)], skipped: [], quarantined: []) == "STILL RUNNING: a")
         #expect(overallStatus(results: [], skipped: [], quarantined: ["q", "z"]) == "QUARANTINED: q,z")
         #expect(overallStatus(results: [r("a", .failed), r("b", .stillRunning)], skipped: [],
                               quarantined: ["q"]) == "FAILED: a; STILL RUNNING: b; QUARANTINED: q")
+    }
+
+    @Test func skippedAtPlanningIsReportedWithReasons() {
+        let missing = SkippedItem(id: "zscaler", reason: "cached package missing", countsAsFailure: false)
+        let hook = SkippedItem(id: "cisco", reason: "hook not trusted", countsAsFailure: false)
+        let notInstalled = SkippedItem(id: "zoom", reason: "not installed", countsAsFailure: false)
+        let quarantined = SkippedItem(id: "q", reason: "quarantined", countsAsFailure: false)
+        #expect(overallStatus(results: [], skipped: [missing], quarantined: [])
+                == "SKIPPED: zscaler (cached package missing)")
+        #expect(overallStatus(results: [r("a", .done)], skipped: [missing, hook], quarantined: [])
+                == "SKIPPED: zscaler (cached package missing), cisco (hook not trusted)")
+        #expect(overallStatus(results: [r("a", .failed)], skipped: [quarantined, missing], quarantined: ["q"])
+                == "FAILED: a; QUARANTINED: q; SKIPPED: zscaler (cached package missing)")
+        // Deliberate skips stay "OK".
+        #expect(overallStatus(results: [r("a", .done)], skipped: [notInstalled], quarantined: []) == "OK")
     }
 
     @Test func blockedComesFirst() {
