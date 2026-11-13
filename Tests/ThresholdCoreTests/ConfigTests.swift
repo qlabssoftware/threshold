@@ -191,3 +191,16 @@ private let cisco: [String: Any] = ["id": "cisco", "displayName": "Cisco Secure 
     #expect(c.items.isEmpty)
     #expect(c.invalidItems.first?.reason.contains("installIfMissing must be a boolean") == true)
 }
+
+// MARK: - Minimum OS
+
+@Test func minimumOSVersionParsing() throws {
+    #expect(try Config.parse([:]).global.minimumOSVersion == nil)
+    #expect(try Config.parse(["minimumOSVersion": ""]).global.minimumOSVersion == nil)
+    #expect(try Config.parse(["minimumOSVersion": "27"]).global.minimumOSVersion == Version("27"))
+    #expect(try Config.parse(["minimumOSVersion": " 26.4 "]).global.minimumOSVersion == Version("26.4"))
+    #expect(try Config.parse(["minimumOSVersion": NSNumber(value: 27)]).global.minimumOSVersion == Version("27"))
+    for bad: Any in ["macOS 27", "27-beta", "x", NSNumber(value: true), ["27"]] {
+        #expect(throws: ConfigError.self) { try Config.parse(["minimumOSVersion": bad]) }
+    }
+}

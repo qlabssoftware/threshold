@@ -162,6 +162,8 @@ private final class World: Platform {
 
     func bootSessionUUID() -> String { boot }
     func uptimeSeconds() -> TimeInterval { uptime }
+    var os = "26.1"
+    func osVersion() -> Version { Version(os)! }
     func fileExists(_ path: String) -> Bool { files.contains(path) }
     func trustedExecutable(_ path: String) -> String? {
         // Like the real resolver, an already-resolved trusted path resolves to itself.
@@ -275,6 +277,51 @@ private struct WorldVersions: VersionReading {
     #expect(w.report?.overall == "DISABLED")
     #expect(w.presenters.isEmpty)
     #expect(w.staleKills == 1)
+}
+
+// MARK: - Minimum OS
+
+@Test func belowMinimumOSShowsNothingAndLeavesBootUnhandled() {
+    let w = World()
+    w.os = "26.1"
+    w.prefs = ["minimumOSVersion": "27", "items": [cachedItem("a")]]
+    #expect(w.run() == 0)
+    #expect(w.report?.overall == "OS BELOW MINIMUM: macOS 26.1 < 27")
+    #expect(w.presenters.isEmpty)
+    #expect(w.installs.isEmpty)
+    #expect(w.versionReads == 0)        // gated before any planning
+    #expect(w.state.lastHandledBootSession == nil)
+}
+
+@Test func atOrAboveMinimumOSRunsUpdates() {
+    for os in ["27.0", "27.2.1", "28.0"] {
+        let w = World()
+        w.os = os
+        w.prefs = ["minimumOSVersion": "27", "items": [cachedItem("a")]]
+        #expect(w.run() == 0)
+        #expect(w.installs.keys.sorted() == ["a"], "macOS \(os)")
+        #expect(w.report?.items.map(\.state) == [.done], "macOS \(os)")
+    }
+}
+
+@Test func noMinimumOSRunsOnAnyVersion() {
+    let w = World()
+    w.os = "15.0"
+    w.prefs = ["items": [cachedItem("a")]]
+    #expect(w.run() == 0)
+    #expect(w.installs.keys.sorted() == ["a"])
+}
+
+@Test func minimumOSRaisedInLoginConfigShowsNothing() {
+    let w = World()
+    w.os = "27.0"
+    w.prefs = ["items": [cachedItem("a")]]
+    w.users = [nil, ("alice", 501)]
+    w.onUserPoll[1] = { w.prefs = ["minimumOSVersion": "28", "items": [cachedItem("a")]] }
+    #expect(w.run() == 0)
+    #expect(w.report?.overall == "OS BELOW MINIMUM: macOS 27.0 < 28")
+    #expect(w.presenters.isEmpty)
+    #expect(w.installs.isEmpty)
 }
 
 @Test func globalConfigErrorWritesConfigError() {

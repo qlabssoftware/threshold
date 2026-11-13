@@ -1,7 +1,7 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
   "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
-  "__version": "1.3.0",
+  "__version": "1.4.0",
   "type": "object",
   "properties": {
     "enabled": {
@@ -9,6 +9,12 @@
       "description": "Kill switch. Set to false and Threshold does nothing.",
       "type": "boolean",
       "default": true
+    },
+    "minimumOSVersion": {
+      "title": "Minimum macOS version",
+      "description": "Threshold runs only on this macOS version or later, for example 27 (runs on macOS 27, 27.x, 28 and later). On an older macOS it does nothing: no blur, no installs. Checked at the first login after each boot, so the first login after the OS upgrade runs the updates. Empty = any macOS.",
+      "type": "string",
+      "pattern": "^([0-9]+(\\.[0-9]+)*)?$"
     },
     "capSeconds": {
       "title": "Blur cap (seconds)",

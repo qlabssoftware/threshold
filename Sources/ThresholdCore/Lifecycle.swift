@@ -18,6 +18,8 @@ public protocol Platform: AnyObject {
     func consoleUser() -> (name: String, uid: uid_t)?
     func bootSessionUUID() -> String
     func uptimeSeconds() -> TimeInterval
+    /// The running macOS version, e.g. "27.0.1".
+    func osVersion() -> Version
     func fileExists(_ path: String) -> Bool
     /// The resolved path of a configured executable if it may be run as root, else nil (missing or
     /// untrusted). See `ExecutableTrust`; production uses the default in that file.
@@ -277,7 +279,14 @@ public final class Lifecycle {
         }
         log.info("config loaded (\(moment)): \(config.items.count) item(s), \(config.invalidItems.count) invalid")
         for invalid in config.invalidItems { log.error("invalid item \(invalid.id): \(invalid.reason)") }
-        return config.global.enabled ? .ready(config) : .stop("DISABLED")
+        guard config.global.enabled else { return .stop("DISABLED") }
+        // The OS gate comes before any planning, so a Mac below the minimum never blurs.
+        if let minimum = config.global.minimumOSVersion {
+            let os = platform.osVersion()
+            guard os >= minimum else { return .stop("OS BELOW MINIMUM: macOS \(os) < \(minimum)") }
+            log.info("macOS \(os) meets minimum \(minimum)")
+        }
+        return .ready(config)
     }
 
     private func exitEarly(overall: String, boot: String) -> Int32 {
