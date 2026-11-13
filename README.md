@@ -32,6 +32,8 @@ Prefer a plain list? Set **Window style** to Classic in the profile.
 
 Step-by-step instructions are in the [Getting Started guide](https://github.com/qlabssoftware/threshold/wiki/Getting-Started).
 
+To remove Threshold, run [`uninstall.sh`](Packaging/uninstall.sh) as root (`sudo ./uninstall.sh`, or as a Jamf policy script). It's also attached to every [release](https://github.com/qlabssoftware/threshold/releases/latest). Details: [Uninstall](https://github.com/qlabssoftware/threshold/wiki/Uninstall).
+
 ## Requirements
 
 - Apple silicon, macOS 14 or later
