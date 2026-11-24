@@ -54,6 +54,7 @@ public enum CheckReport {
         ]
         if let icon = g.icon { out["icon"] = icon }
         if let minimum = g.minimumOSVersion { out["minimumOSVersion"] = minimum.raw }
+        if let quitKey = g.quitKey { out["quitKey"] = quitKey }
         if let statusLog = g.statusLog { out["statusLog"] = statusLog }
         return out
     }

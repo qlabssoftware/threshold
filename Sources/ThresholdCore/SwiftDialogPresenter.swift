@@ -46,10 +46,9 @@ public final class SwiftDialogPresenter: DialogPresenting {
         args += ["--commandfile", commandFile.path,
                  "--timer", String(global.capSeconds + 60),
                  "--hidetimerbar", "--button1disabled",
-                 // swiftDialog quits on Cmd+<quitkey>. U+E000 is a private-use character that no keyboard
-                 // layout produces (unlike "§" on ISO keyboards, or U+F8FF, Option-Shift-K on US layouts),
+                 // swiftDialog quits on Cmd+<quitkey>. Unless the admin set quitKey, this is untypeable,
                  // so the user can't dismiss the blur from the keyboard.
-                 "--quitkey", "\u{E000}",
+                 "--quitkey", global.effectiveQuitKey,
                  "--progress", String(items.count)]
         for item in items {
             var value = sanitize(item.displayName, commas: true)

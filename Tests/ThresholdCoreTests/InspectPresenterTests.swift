@@ -112,6 +112,21 @@ struct InspectPresenterTests {
         #expect(launcher.launches.count == 1)                          // SIGTERM was enough: no pkill
     }
 
+    @Test func configuredQuitKeyIsPassedToTheWatchdog() throws {
+        let dir = makeDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let clock = FakeClock()
+        let launcher = FakeLauncher { _, _ in FakeProcess(clock: clock, runsFor: 10_000) }
+        let p = InspectPresenter(dialogPath: "/usr/local/bin/dialog", consoleUID: 501,
+                                 runDirectory: dir.appendingPathComponent("run"),
+                                 commandFile: dir.appendingPathComponent("dialog.log"),
+                                 launcher: launcher, clock: clock, requiredOwnerUID: nil)
+        var g = global(); g.quitKey = "k"
+        try p.showBlur(items: [item("a")], global: g)
+        let args = launcher.launches[0].arguments
+        #expect(args[args.count - 2] == "k")   // $4 of the watchdog: the quit key
+    }
+
     @Test func finishFallsBackToPkillWhenTheDialogIgnoresSigterm() throws {
         let dir = makeDir()
         defer { try? FileManager.default.removeItem(at: dir) }

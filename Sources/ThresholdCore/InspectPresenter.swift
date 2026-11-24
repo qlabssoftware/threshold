@@ -133,7 +133,7 @@ public final class InspectPresenter: DialogPresenting {
         try prepareMarkerDirectory()
         try Self.prepareSharedFile(commandFile)
 
-        let quitKey = "\u{E000}"   // same as the classic window: no keyboard layout produces it
+        let quitKey = global.effectiveQuitKey   // untypeable unless the admin set quitKey
         let args = ["asuser", String(consoleUID), "/bin/sh", "-c", Self.watchdogScript, "threshold-dialog",
                     dialogPath, configFile.path, String(global.capSeconds + 60), quitKey,
                     global.blurScreen ? "1" : "0"]

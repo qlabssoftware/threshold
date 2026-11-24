@@ -31,8 +31,17 @@ public struct GlobalConfig: Equatable {
     /// false: no blur and no always-on-top; the progress window still shows and can't be quit (testing,
     /// gentler rollouts).
     public var blurScreen: Bool
+    /// Admin escape hatch: Cmd+<quitKey> closes the window (a lowercase letter or digit). Installs already
+    /// running continue in the background. nil = the window can't be closed from the keyboard.
+    public var quitKey: String?
     /// Absolute path of a log whose newest line is shown under the item while it waits or installs; nil = off.
     public var statusLog: String?
+
+    /// The quit key swiftDialog gets when none is configured. U+E000 is a private-use character that no keyboard
+    /// layout produces (unlike "§" on ISO keyboards, or U+F8FF, Option-Shift-K on US layouts).
+    public static let untypeableQuitKey = "\u{E000}"
+    /// What the presenters pass to swiftDialog's `--quitkey`.
+    public var effectiveQuitKey: String { quitKey ?? Self.untypeableQuitKey }
 
     /// Where else the standard installers put the real binaries. Tried, in order, when the standard path
     /// fails the trust check (e.g. `/usr/local/bin` owned by a user after Migration Assistant).
@@ -220,6 +229,18 @@ public struct Config: Equatable {
                 minimumOS = parsed
             }
         }
+        var quitKey: String?
+        if let v = d["quitKey"] {
+            guard let s = v as? String else { throw bad("quitKey", "must be a string") }
+            let key = s.trimmingCharacters(in: .whitespaces).lowercased()
+            if !key.isEmpty {
+                guard key.count == 1, let c = key.unicodeScalars.first, c.isASCII,
+                      ("a"..."z").contains(c) || ("0"..."9").contains(c) else {
+                    throw bad("quitKey", "must be a single letter or digit")
+                }
+                quitKey = key
+            }
+        }
         var icon: String?
         if let v = d["icon"] {
             guard let s = v as? String else { throw bad("icon", "must be a string") }
@@ -247,6 +268,7 @@ public struct Config: Equatable {
             supportText: try string("supportText", "If this keeps happening, contact IT."),
             windowStyle: style,
             blurScreen: try bool("blurScreen", true),
+            quitKey: quitKey,
             statusLog: statusLog)
     }
 

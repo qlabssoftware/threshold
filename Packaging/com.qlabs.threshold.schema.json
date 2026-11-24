@@ -1,7 +1,7 @@
 {
   "title": "Threshold (com.qlabs.threshold)",
   "description": "Runs app updates behind a blurred progress screen at the first login after each boot.",
-  "__version": "1.4.0",
+  "__version": "1.5.0",
   "type": "object",
   "properties": {
     "enabled": {
@@ -107,6 +107,12 @@
       "description": "On (default): the desktop is blurred and blocked while updates install. Off: the progress window shows over a usable desktop, for testing or gentler rollouts; users can then work, or restart, during installs.",
       "type": "boolean",
       "default": true
+    },
+    "quitKey": {
+      "title": "Admin quit key",
+      "description": "One letter or digit. Cmd + this key closes the Threshold window and lifts the blur; updates already installing keep going in the background. Empty = the window can't be closed from the keyboard. Anyone who learns the key can skip the window, so avoid common shortcuts like q, w, c or v.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]?$"
     },
     "statusLog": {
       "title": "Status log",

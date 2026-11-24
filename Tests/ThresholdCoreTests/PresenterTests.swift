@@ -23,6 +23,12 @@ struct PresenterTests {
         args.firstIndex(of: flag).flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
     }
 
+    @Test func configuredQuitKeyIsPassedToTheClassicWindow() {
+        var g = global(); g.quitKey = "k"
+        let args = SwiftDialogPresenter.blurArguments(items: [item("a")], global: g, commandFile: cmd)
+        #expect(value(after: "--quitkey", in: args) == "k")
+    }
+
     @Test func blurArgs() {
         let items = [item("a", name: "Alpha"), item("b", icon: "/i.png"), item("c", app: false),
                      item("d", icon: "/d.png", app: false)]

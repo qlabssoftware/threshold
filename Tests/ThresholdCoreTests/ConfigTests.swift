@@ -204,3 +204,17 @@ private let cisco: [String: Any] = ["id": "cisco", "displayName": "Cisco Secure 
         #expect(throws: ConfigError.self) { try Config.parse(["minimumOSVersion": bad]) }
     }
 }
+
+// MARK: - Quit key
+
+@Test func quitKeyParsing() throws {
+    #expect(try Config.parse([:]).global.quitKey == nil)
+    #expect(try Config.parse([:]).global.effectiveQuitKey == "\u{E000}")   // untypeable by default
+    #expect(try Config.parse(["quitKey": ""]).global.quitKey == nil)
+    #expect(try Config.parse(["quitKey": "k"]).global.effectiveQuitKey == "k")
+    #expect(try Config.parse(["quitKey": "K"]).global.quitKey == "k")
+    #expect(try Config.parse(["quitKey": "7"]).global.quitKey == "7")
+    for bad: Any in ["kk", "§", "é", "-", NSNumber(value: 1)] {
+        #expect(throws: ConfigError.self) { try Config.parse(["quitKey": bad]) }
+    }
+}
